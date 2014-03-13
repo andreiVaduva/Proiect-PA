@@ -27,8 +27,8 @@ public class ChessMain {
 						return;
 					}
 					chess.turn = Turn.PLAYER;
-					System.out.println("ENGINE");
-					chess.printMatrix(); ///////////////////////////
+//					System.out.println("ENGINE");
+//					chess.printMatrix(); ///////////////////////////
 					continue;
 				}
 
@@ -38,8 +38,8 @@ public class ChessMain {
 				if (command.startsWith("usermove")) {
 					chess.moveYourPiece(command.split(" ")[1]);
 					chess.turn = Turn.ENGINE;
-					System.out.println("PLAYER");
-					chess.printMatrix(); //////////////////////////////
+//					System.out.println("PLAYER");
+//					chess.printMatrix(); //////////////////////////////
 					continue;
 				}
 				
@@ -102,8 +102,8 @@ public class ChessMain {
 		tabel[0][4] = Piese.WHITE_KING;
 		tabel[7][4] = Piese.BLACK_KING;
 		
-		System.out.println("initializare");
-/*		for (int line = 0; line < 8; ++line) {
+/*		System.out.println("initializare");
+		for (int line = 0; line < 8; ++line) {
 			for (int col = 0; col < 8; ++col)
 				System.out.print(tabel[line][col] + " ");
 			System.out.println();
@@ -112,7 +112,7 @@ public class ChessMain {
 	
 	public boolean moveYourPiece(String move) {
 		int fromL, fromC, toL, toC;
-		
+
 		fromC = move.charAt(0) - 'a';
 		fromL = move.charAt(1) - '1';
 		toC = move.charAt(2) - 'a';
@@ -152,7 +152,7 @@ public class ChessMain {
 				return false;
 			}
 		} 
-		else if (color == color.BLACK && tabel[line][col] == Piese.WHITE_PAWN){
+		else if (color == color.BLACK && tabel[line][col] == Piese.BLACK_PAWN){
 			if (tabel[line-1][col] == Piese.BLANK) {
 				takePiece(line, col, line-1, col);
 				giveCommand(line, col, line-1, col);
@@ -169,10 +169,10 @@ public class ChessMain {
 		StringBuffer command = new StringBuffer(10);
 		
 		command.append("move ");
-		command.append(fromC + 'a');
-		command.append(fromL + '1');
-		command.append(toC + 'a');
-		command.append(toL + '1');
+		command.append((char)('a' + fromC));
+		command.append((char)('1' + fromL));
+		command.append((char)('a' + toC));
+		command.append((char)('1' + toL));
 		command.append('\n');
 		
 		System.out.println(command);
