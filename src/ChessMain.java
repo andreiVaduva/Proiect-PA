@@ -4,23 +4,43 @@ import java.io.*;
 public class ChessMain {
 	
 	int[][] tabel = new int[8][8];
+	Color color = Color.BLACK;
+	Turn turn = Turn.PLAYER;
+	
+	boolean firstMove = true;
+	int line, col = 4;
 	
 	public static void main(String[] args) {
 		String command = new String();
 		BufferedReader scanner = new BufferedReader(new InputStreamReader(
 				System.in));
 		Stare st;
-		Color color;
-		
+	
 		ChessMain chess = new ChessMain();
-
+		
 		while (true) {
 			try {
+
+				if (chess.turn == Turn.ENGINE) {
+					if (!chess.moveOurPiece()) {
+						System.out.println("resign");
+						return;
+					}
+					chess.turn = Turn.PLAYER;
+					System.out.println("ENGINE");
+					chess.printMatrix(); ///////////////////////////
+					continue;
+				}
+
 				command = scanner.readLine();
 				command.toLowerCase();
-
+				
 				if (command.startsWith("usermove")) {
-					chess.movePiece(command.split(" ")[1]);
+					chess.moveYourPiece(command.split(" ")[1]);
+					chess.turn = Turn.ENGINE;
+					System.out.println("PLAYER");
+					chess.printMatrix(); //////////////////////////////
+					continue;
 				}
 				
 				switch (command) {
@@ -36,12 +56,14 @@ public class ChessMain {
 							break;
 						case "go":
 							st = Stare.GO;
+							chess.turn = Turn.ENGINE;
 							break;
 						case "white":
-							color = Color.BLACK;
+							chess.color = Color.BLACK;
 							break;
 						case "black":
-							color = Color.WHITE;
+							chess.color = Color.WHITE;
+							chess.turn = Turn.ENGINE;
 							break;
 						case "quit":
 							return;
@@ -88,7 +110,7 @@ public class ChessMain {
 		}*/
 	}
 	
-	public boolean movePiece(String move) {
+	public boolean moveYourPiece(String move) {
 		int fromL, fromC, toL, toC;
 		
 		fromC = move.charAt(0) - 'a';
@@ -96,17 +118,70 @@ public class ChessMain {
 		toC = move.charAt(2) - 'a';
 		toL = move.charAt(3) - '1';
 
-		System.out.println("formL: " + fromL);
-		System.out.println("formC: " + fromC);
-		System.out.println("toL: " + toL);
-		System.out.println("toC: " + toC);
+//		System.out.println("formL: " + fromL);
+//		System.out.println("formC: " + fromC);
+//		System.out.println("toL: " + toL);
+//		System.out.println("toC: " + toC);
 		
 		tabel[toL][toC] = tabel[fromL][fromC];
 		tabel[fromL][fromC] = Piese.BLANK;
 
-		printMatrix();
+//		printMatrix();
 
 		return true;
+	}
+	
+	public boolean moveOurPiece() {
+		if (firstMove) {
+			firstMove = false;
+			if (color == color.WHITE) {
+				line = 1;
+			}
+			else {
+				line = 6;
+			}
+		}
+		
+		if (color == color.WHITE && tabel[line][col] == Piese.WHITE_PAWN) {
+			if (tabel[line+1][col] == Piese.BLANK) {
+				takePiece(line, col, line+1, col);
+				giveCommand(line, col, line+1, col);
+				line++;
+				return true;
+			} else {
+				return false;
+			}
+		} 
+		else if (color == color.BLACK && tabel[line][col] == Piese.WHITE_PAWN){
+			if (tabel[line-1][col] == Piese.BLANK) {
+				takePiece(line, col, line-1, col);
+				giveCommand(line, col, line-1, col);
+				line--;
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	}
+	
+	private void giveCommand(int fromL, int fromC, int toL, int toC) {
+		StringBuffer command = new StringBuffer(10);
+		
+		command.append("move ");
+		command.append(fromC + 'a');
+		command.append(fromL + '1');
+		command.append(toC + 'a');
+		command.append(toL + '1');
+		command.append('\n');
+		
+		System.out.println(command);
+		System.out.flush();
+	}
+
+	public void takePiece(int fromL, int fromC, int toL, int toC) {
+		tabel[toL][toC] = tabel[fromL][fromC];
+		tabel[fromL][fromC] = Piese.BLANK;
 	}
 	
 // TODO: remove after testing	
@@ -126,6 +201,10 @@ enum Stare {
 
 enum Color {
 	WHITE, BLACK;
+}
+
+enum Turn {
+	ENGINE, PLAYER;
 }
 
 class Piese {
