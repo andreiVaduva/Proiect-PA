@@ -1,213 +1,49 @@
-import java.util.*;
 import java.io.*;
 
-public class ChessMain {
-	
-	int[][] tabel = new int[8][8];
-	Color color = Color.BLACK;
-	Turn turn = Turn.PLAYER;
-	
-	boolean firstMove = true;
-	int line, col = 4;
-	
-	public static void main(String[] args) {
-		String command = new String();
-		BufferedReader scanner = new BufferedReader(new InputStreamReader(
-				System.in));
-		Stare st;
-	
-		ChessMain chess = new ChessMain();
-		
-		while (true) {
-			try {
+/* IMPORTANT !
+ *  Parcurgeti codul si voi si spuneti-va parerea.
+	deschideti xboard cu comanda xboard -debug si va
+	va crea in bin un fisier.
+ */
 
-				if (chess.turn == Turn.ENGINE) {
-					if (!chess.moveOurPiece()) {
-						System.out.println("resign");
-						return;
-					}
-					chess.turn = Turn.PLAYER;
-//					System.out.println("ENGINE");
-//					chess.printMatrix(); ///////////////////////////
-					continue;
-				}
-
-				command = scanner.readLine();
-				command.toLowerCase();
-				
-				if (command.startsWith("usermove")) {
-					chess.moveYourPiece(command.split(" ")[1]);
-					chess.turn = Turn.ENGINE;
-//					System.out.println("PLAYER");
-//					chess.printMatrix(); //////////////////////////////
-					continue;
-				}
-				
-				switch (command) {
-						case "xboard":
-							st = Stare.ACTIV;
-							break;
-						case "new":
-							st = Stare.NEW_GAME;
-							chess.initTabel();
-							break;
-						case "force":
-							st = Stare.FORCE;
-							break;
-						case "go":
-							st = Stare.GO;
-							chess.turn = Turn.ENGINE;
-							break;
-						case "white":
-							chess.color = Color.BLACK;
-							break;
-						case "black":
-							chess.color = Color.WHITE;
-							chess.turn = Turn.ENGINE;
-							break;
-						case "quit":
-							return;
-						default:
-							break;
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-	}
-	
-	public void initTabel() {
-
-		for (int line = 0; line < 8; ++line)
-			for (int col = 0; col < 8; ++col)
-				tabel[line][col] = 0;
-		
-		for (int i = 0; i < 8; ++i) {
-			tabel[1][i] = Piese.WHITE_PAWN;
-			tabel[6][i] = Piese.BLACK_PAWN;
-		}
-		
-		tabel[0][1] = tabel[0][6] = Piese.WHITE_HORSE;
-		tabel[7][1] = tabel[7][6] = Piese.BLACK_HORSE;
-
-		tabel[0][2] = tabel[0][5] = Piese.WHITE_BISHOP;
-		tabel[7][2] = tabel[7][5] = Piese.BLACK_BISHOP;
-		
-		tabel[0][0] = tabel[0][7] = Piese.WHITE_ROOK;
-		tabel[7][0] = tabel[7][7] = Piese.BLACK_ROOK;
-		
-		tabel[0][3] = Piese.WHITE_QUEEN;
-		tabel[7][3] = Piese.BLACK_QUEEN;
-		
-		tabel[0][4] = Piese.WHITE_KING;
-		tabel[7][4] = Piese.BLACK_KING;
-		
-/*		System.out.println("initializare");
-		for (int line = 0; line < 8; ++line) {
-			for (int col = 0; col < 8; ++col)
-				System.out.print(tabel[line][col] + " ");
-			System.out.println();
-		}*/
-	}
-	
-	public boolean moveYourPiece(String move) {
-		int fromL, fromC, toL, toC;
-
-		fromC = move.charAt(0) - 'a';
-		fromL = move.charAt(1) - '1';
-		toC = move.charAt(2) - 'a';
-		toL = move.charAt(3) - '1';
-
-//		System.out.println("formL: " + fromL);
-//		System.out.println("formC: " + fromC);
-//		System.out.println("toL: " + toL);
-//		System.out.println("toC: " + toC);
-		
-		tabel[toL][toC] = tabel[fromL][fromC];
-		tabel[fromL][fromC] = Piese.BLANK;
-
-//		printMatrix();
-
-		return true;
-	}
-	
-	public boolean moveOurPiece() {
-		if (firstMove) {
-			firstMove = false;
-			if (color == color.WHITE) {
-				line = 1;
-			}
-			else {
-				line = 6;
-			}
-		}
-		
-		if (color == color.WHITE && tabel[line][col] == Piese.WHITE_PAWN) {
-			if (tabel[line+1][col] == Piese.BLANK) {
-				takePiece(line, col, line+1, col);
-				giveCommand(line, col, line+1, col);
-				line++;
-				return true;
-			} else {
-				return false;
-			}
-		} 
-		else if (color == color.BLACK && tabel[line][col] == Piese.BLACK_PAWN){
-			if (tabel[line-1][col] == Piese.BLANK) {
-				takePiece(line, col, line-1, col);
-				giveCommand(line, col, line-1, col);
-				line--;
-				return true;
-			} else {
-				return false;
-			}
-		}
-		return false;
-	}
-	
-	private void giveCommand(int fromL, int fromC, int toL, int toC) {
-		StringBuffer command = new StringBuffer(10);
-		
-		command.append("move ");
-		command.append((char)('a' + fromC));
-		command.append((char)('1' + fromL));
-		command.append((char)('a' + toC));
-		command.append((char)('1' + toL));
-		command.append('\n');
-		
-		System.out.println(command);
-		System.out.flush();
-	}
-
-	public void takePiece(int fromL, int fromC, int toL, int toC) {
-		tabel[toL][toC] = tabel[fromL][fromC];
-		tabel[fromL][fromC] = Piese.BLANK;
-	}
-	
-// TODO: remove after testing	
-	public void printMatrix() {
-		for (int line = 0; line < 8; ++line) {
-			for (int col = 0; col < 8; ++col)
-				System.out.print(tabel[line][col] + " ");
-			System.out.println();
-		}
-	}
-	
-}
-
-enum Stare {
-	ACTIV, NEW_GAME, FORCE, GO;
+enum State {
+	ACTIV, NEW_GAME, FORCE, GO, INACTIVE;
 }
 
 enum Color {
 	WHITE, BLACK;
 }
 
+	/*
+	 * END - turn atunci cand engine-ul nu mai are nicio varianta
+	 * de a muta.
+	 */
+
 enum Turn {
-	ENGINE, PLAYER;
+	ENGINE, PLAYER, END;
+}
+	/*
+	 * Clasa Moves este folosita pentru a crea mutarile de pe tabla
+	 * cu variabilele sale membre destul de intuitive.
+	 */
+
+class Moves {
+	
+	public int currentLine;
+	public int currentColumn;
+	public int futureLine;
+	public int futureColumn;
+	
+	public Moves (int currentLine, int currentColumn, int futureLine, int futureColumn) {
+		this.currentLine = currentLine;
+		this.currentColumn = currentColumn;
+		this.futureLine = futureLine;
+		this.futureColumn = futureColumn;
+	}
 }
 
 class Piese {
+	
 	public static final int WHITE_PAWN = 1;
 	public static final int BLACK_PAWN = -1;
 	public static final int WHITE_HORSE = 2;
@@ -221,4 +57,236 @@ class Piese {
 	public static final int WHITE_KING = 6;
 	public static final int BLACK_KING = -6;
 	public static final int BLANK = 0;
+}
+
+public class ChessMain {
+	
+	/*
+	 * Starea initiala jocului este inactiva, engine-ul are culoarea implicita negru
+	 * si primul pentru a muta este jucatorul, variabilele lineTest si columTest sunt
+	 * doar pentru teste.
+	 */
+	public Color engineColor = Color.BLACK;
+	public Turn turn = Turn.PLAYER;
+	public static final int COLUMNS = 8;
+	public static final int ROWS = 8;
+	public int[][] table;
+	public int lineTest = 6, columnTest = 0;
+	public State state = State.INACTIVE; 
+	
+	public static void main(String[] args) throws IOException {
+		
+		String command = new String();
+		BufferedReader buff = new BufferedReader(new InputStreamReader(
+				System.in));
+		ChessMain chess = new ChessMain();
+
+		/*
+		 * http://home.hccnet.nl/h.g.muller/engine-intf.html#7
+		 * Sectiunea 9. Commands from the engine to xboard pentru
+		 * a scapa de eroarea pe care o primeam dupa una sau doua
+		 * mutari.
+		 */
+		
+		System.out.println("feature sigint=0");
+		System.out.flush();
+		System.out.println("feature sigterm=0");
+		System.out.flush();
+		
+		do {
+			try {
+				
+				if(chess.turn == Turn.ENGINE) {
+					if (chess.moveEngine() == false) {
+						chess.turn = Turn.END;
+					} else {
+						chess.turn = Turn.PLAYER;
+					}
+				}
+				
+				/*
+				 * Daca engine-ul nu mai are mutari valide posibile si starea jocului
+				 * este activa atunci dam resign. 
+				 */
+				
+				if(chess.turn == Turn.END && chess.state == State.ACTIV) {
+					chess.state = State.INACTIVE;
+					System.out.println("resign");
+					System.out.flush();
+					continue;
+				}
+				
+				command = buff.readLine();
+				
+				if (command.startsWith("xboard")) {
+					chess.state = State.ACTIV;
+					continue;
+				}
+				
+				if (command.startsWith("new")) {
+					chess.state = State.ACTIV;
+					chess.initTable();
+					continue;
+				}
+				
+				if (command.startsWith("quit"))
+					return;
+					
+				/*
+				 * Modalitate de a stabili daca este o comanda de move din partea jucatorului,
+				 * sunt utile alte variante mai "inteligente"
+				 */
+				
+				if (command.length() == 4 && chess.isNumber(command.charAt(1)) && chess.isNumber(command.charAt(3))) {
+					chess.movePlayer(command);
+					chess.turn = Turn.ENGINE;
+					continue;
+				}
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		} while(true);
+	}
+	
+	public void initTable() {
+		
+		lineTest = 6;
+		table = new int[ROWS][COLUMNS];
+		for (int i = 0; i < ROWS; ++i)
+			for (int j = 0; j < COLUMNS; ++j)
+				table[i][j] = 0;
+		
+		for (int i = 0; i < 8; ++i) {
+			table[1][i] = Piese.WHITE_PAWN;
+			table[6][i] = Piese.BLACK_PAWN;
+		}
+		
+		table[0][1] = table[0][6] = Piese.WHITE_HORSE;
+		table[7][1] = table[7][6] = Piese.BLACK_HORSE;
+
+		table[0][2] = table[0][5] = Piese.WHITE_BISHOP;
+		table[7][2] = table[7][5] = Piese.BLACK_BISHOP;
+		
+		table[0][0] = table[0][7] = Piese.WHITE_ROOK;
+		table[7][0] = table[7][7] = Piese.BLACK_ROOK;
+		
+		table[0][3] = Piese.WHITE_QUEEN;
+		table[7][3] = Piese.BLACK_QUEEN;
+		
+		table[0][4] = Piese.WHITE_KING;
+		table[7][4] = Piese.BLACK_KING;
+	}
+	
+	/*
+	 * Metoda pentru a decodifica comanda primita de la xboard din partea jucatorului
+	 * returneaza mutarea.
+	 */
+	
+	public Moves decodeMove(String moveCommand) {
+		
+		int currentLine, currentColumn, futureLine, futureColumn;
+
+		currentColumn = moveCommand.charAt(0) - 'a';
+		currentLine = moveCommand.charAt(1) - '1';
+		futureColumn = moveCommand.charAt(2) - 'a';
+		futureLine  = moveCommand.charAt(3) - '1';
+		
+		Moves move = new Moves(currentLine, currentColumn, futureLine, futureColumn);
+		
+		return move;
+	}
+	
+	/*
+	 * Metoda pentru a codifica o mutare a engine-ului pentru a transmite-o xbordului.
+	 * returneaza StringBufferul de forma a2a3 etc. .
+	 */
+	
+	public StringBuffer encodeMove(Moves move) {
+		
+		StringBuffer moveEngine = new StringBuffer(100000);
+		
+		moveEngine.append("move ");
+		moveEngine.append((char)('a' + move.currentColumn));
+		moveEngine.append((char)('1' + move.currentLine));
+		moveEngine.append((char)('a' + move.futureColumn));
+		moveEngine.append((char)('1' + move.futureLine));
+		
+		return moveEngine;
+	}
+	
+	/*
+	 * Mutarea jucatorului. 
+	 */
+	
+	public boolean movePlayer(String moveCommand) {
+		
+		Moves move = decodeMove(moveCommand);	
+		if (makeMove(move))
+			return true;
+		return false;
+	}
+	
+	/*
+	 * Metoda de determinare a urmatoarei mutari a engine-ului.
+	 * if (table[lineTest][0] > 0) {
+			lineTest++;
+			return false;
+		} - este inca la stadiul extrem de primitiv in sensul
+		ca verifca daca intalneste piesa de culoarea inversa (idee)
+		incrementeaza lineTest pentru ca aparea situatia in care dupa
+		resign dadeam new si nu mai functiona.
+	 */
+	
+	public boolean moveEngine() {
+		
+		Moves move = new Moves(lineTest, 0, lineTest - 1, 0);
+		lineTest--;
+		if (table[lineTest][0] > 0) {
+			lineTest++;
+			return false;
+		}
+		StringBuffer moveEngine = encodeMove(move);
+		makeMove(move);
+		System.out.println(moveEngine);
+		System.out.flush();
+		
+		return true;
+	}
+	
+	/*
+	 * Metoda ce realizeaza mutarea pe tabla (matrice). 
+	 */
+	
+	public boolean makeMove(Moves move) {
+		
+		//TODO valid move;
+		table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+		table[move.currentLine][move.currentColumn] = Piese.BLANK;
+		return true;
+	}
+	
+	public boolean isNumber(char value) {
+		//Alte optiuni de a testa ca s-a primit o comanda de forma a3a4 etc. idei ?
+		
+		int number = 0;
+		try {
+			number = Integer.parseInt(String.valueOf(value));
+			return true;
+		} catch (NumberFormatException er) {
+			return false;
+		}
+	}	
+	
+	/*
+	 * Pentru testare printare matrice decomentati.
+	 */
+	
+	/*public void printMatrix() {
+		for (int line = 0; line < 8; ++line) {
+			for (int col = 0; col < 8; ++col)
+				System.out.print(table[line][col] + " ");
+			System.out.println();
+		}
+	}*/
 }
