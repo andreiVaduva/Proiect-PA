@@ -1,4 +1,3 @@
-import java.awt.font.NumericShaper;
 import java.io.*;
 import java.util.Random;
 
@@ -26,7 +25,17 @@ enum Turn {
  * Clasa Moves este folosita pentru a crea mutarile de pe tabla cu variabilele
  * sale membre destul de intuitive.
  */
-
+class Position {
+	
+	public int line;
+	public int column;
+	
+	public Position(int line, int column) {
+		
+		this.line = line;
+		this.column = column;
+	}
+}
 class Moves {
 
 	public int currentLine;
@@ -36,6 +45,7 @@ class Moves {
 
 	public Moves(int currentLine, int currentColumn, int futureLine,
 			int futureColumn) {
+		
 		this.currentLine = currentLine;
 		this.currentColumn = currentColumn;
 		this.futureLine = futureLine;
@@ -43,7 +53,7 @@ class Moves {
 	}
 }
 
-class Piese {
+class Pieces {
 
 	public static final int WHITE_PAWN = 1;
 	public static final int BLACK_PAWN = -1;
@@ -74,6 +84,8 @@ public class ChessMain {
 	public int[][] table;
 	public int lineTest = 6, columnTest = 3;
 	public State state = State.INACTIVE;
+	public int colorState = -1;
+	public boolean colorChanged = false;
 
 	public static void main(String[] args) throws IOException {
 
@@ -91,6 +103,8 @@ public class ChessMain {
 		System.out.println("feature sigint=0");
 		System.out.flush();
 		System.out.println("feature sigterm=0");
+		System.out.flush();
+		System.out.println("feature usermove=1");
 		System.out.flush();
 
 		do {
@@ -117,6 +131,12 @@ public class ChessMain {
 				}
 
 				command = buff.readLine();
+				
+				if (command.startsWith("usermove")) {
+					chess.movePlayer(command.split(" ")[1]);
+					chess.turn = Turn.ENGINE;
+					continue;
+				}
 
 				if (command.startsWith("xboard")) {
 					chess.state = State.ACTIV;
@@ -124,25 +144,43 @@ public class ChessMain {
 				}
 
 				if (command.startsWith("new")) {
+					chess.colorState = -1;
+					chess.turn = Turn.PLAYER;
 					chess.engineColor = Color.BLACK;
 					chess.state = State.ACTIV;
 					chess.initTable();
+					chess.colorChanged = false;
 					continue;
 				}
 				
-				if (command.startsWith("white")) {
-					//chess.turn = Turn.;
-					//chess.engineColor = Color.;
-					chess.reverseTable();
+				if (command.startsWith("white") && chess.state == State.ACTIV) {
+					if (chess.colorChanged == false) {
+						chess.turn = Turn.ENGINE;
+						chess.engineColor = Color.BLACK;
+						chess.colorState = -1;
+						Position pawnPosition = chess.positionPiece(Pieces.BLACK_PAWN);
+						chess.lineTest = pawnPosition.line;
+						chess.columnTest = pawnPosition.column;
+						chess.colorChanged = true;
+					} else
+						chess.colorChanged = false;
 					// + treaba cu clock-urile nu imi e deloc clara + INVERSARE TABLA si comportament engine
+
 					continue;
 				}
 				
-				if (command.startsWith("black")) {
-					//chess.turn = Turn.;
-					//chess.engineColor = Color.;
-					chess.reverseTable();
-					// + treaba cu clock-urile nu imi e deloc clara + INVERSARE TABLA si comportament engine
+				if (command.startsWith("black") && chess.state == State.ACTIV) {
+					if (chess.colorChanged == false) {
+						chess.turn = Turn.ENGINE;
+						chess.engineColor = Color.WHITE;
+						chess.colorState = 1;
+						Position pawnPosition = chess.positionPiece(Pieces.WHITE_PAWN);
+						chess.lineTest = pawnPosition.line;
+						chess.columnTest = pawnPosition.column;
+						chess.colorChanged = true;
+					} else
+						chess.colorChanged = false;
+						// + treaba cu clock-urile nu imi e deloc clara + INVERSARE TABLA si comportament engine
 					continue;
 				}
 				
@@ -156,42 +194,19 @@ public class ChessMain {
 				
 				if (command.startsWith("force")) {
 					
-				}
-				
-				if (command.startsWith("move")) {
-					
-				}
-				
-				if (command.startsWith("resign")) {
-					
-				}
-				
+				}		
 				 */
 				
 				if (command.startsWith("quit"))
 					return;
 				
-				
-
-				/*
-				 * Modalitate de a stabili daca este o comanda de move din
-				 * partea jucatorului, sunt utile alte variante mai
-				 * "inteligente"
-				 */
-
-				if (command.length() == 4 && chess.isNumber(command.charAt(1))
-						&& chess.isNumber(command.charAt(3))) {
-					chess.movePlayer(command);
-					chess.turn = Turn.ENGINE;
-					continue;
-				}
-
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		} while (true);
 	}
 	
+	/* 
 	public void reverseTable() {
 
 		int aux;
@@ -202,6 +217,7 @@ public class ChessMain {
 				table[ROWS - i - 1][COLUMNS - j - 1] = aux;
 			}
 	}
+	*/
 	
 	public void initTable() {
 
@@ -213,24 +229,24 @@ public class ChessMain {
 				table[i][j] = 0;
 
 		for (int i = 0; i < 8; ++i) {
-			table[1][i] = Piese.WHITE_PAWN;
-			table[6][i] = Piese.BLACK_PAWN;
+			table[1][i] = Pieces.WHITE_PAWN;
+			table[6][i] = Pieces.BLACK_PAWN;
 		}
 
-		table[0][1] = table[0][6] = Piese.WHITE_HORSE;
-		table[7][1] = table[7][6] = Piese.BLACK_HORSE;
+		table[0][1] = table[0][6] = Pieces.WHITE_HORSE;
+		table[7][1] = table[7][6] = Pieces.BLACK_HORSE;
 
-		table[0][2] = table[0][5] = Piese.WHITE_BISHOP;
-		table[7][2] = table[7][5] = Piese.BLACK_BISHOP;
+		table[0][2] = table[0][5] = Pieces.WHITE_BISHOP;
+		table[7][2] = table[7][5] = Pieces.BLACK_BISHOP;
 
-		table[0][0] = table[0][7] = Piese.WHITE_ROOK;
-		table[7][0] = table[7][7] = Piese.BLACK_ROOK;
+		table[0][0] = table[0][7] = Pieces.WHITE_ROOK;
+		table[7][0] = table[7][7] = Pieces.BLACK_ROOK;
 
-		table[0][3] = Piese.WHITE_QUEEN;
-		table[7][3] = Piese.BLACK_QUEEN;
+		table[0][3] = Pieces.WHITE_QUEEN;
+		table[7][3] = Pieces.BLACK_QUEEN;
 
-		table[0][4] = Piese.WHITE_KING;
-		table[7][4] = Piese.BLACK_KING;
+		table[0][4] = Pieces.WHITE_KING;
+		table[7][4] = Pieces.BLACK_KING;
 	}
 
 	/*
@@ -298,37 +314,37 @@ public class ChessMain {
 		// piesa i-a fost luata deci da resign;
 		if (currentLine == 0)
 			return false; // sau sa ia tot cu regina
-		if (table[currentLine][currentColumn] > 0)
+		if ((-colorState) * table[currentLine][currentColumn] > 0)
 			return false; 
 		
 		int takePieceLeft, takePieceRight, goAhead;
 		takePieceLeft = takePieceRight = goAhead = 0;
 		
-		if (table[lineTest - 1][columnTest] == 0)
+		if (table[lineTest + colorState][columnTest] == 0)
 			goAhead = 1;
 		if (columnTest - 1 >= 0)
-			if (table[lineTest - 1][columnTest - 1] > 0)
+			if ((-colorState) * table[lineTest + colorState][columnTest - 1] > 0)
 				takePieceLeft = 1;
 		if (columnTest + 1 < 8)
-			if (table[lineTest - 1][columnTest + 1] > 0)
+			if ((-colorState) * table[lineTest + colorState][columnTest + 1] > 0)
 				takePieceRight = 1;
 		
 		if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 0)
 			return false;
 		else
 			if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 1) {
-				lineTest--;
+				lineTest = lineTest + colorState;
 				columnTest++;
 			} else
 				if (goAhead == 0 && takePieceLeft == 1 && takePieceRight == 0) {
-					lineTest--;
+					lineTest = lineTest + colorState;
 					columnTest--;
 				} else
 					if (goAhead == 1 && takePieceLeft == 0 && takePieceRight == 0) {
-						lineTest--;
+						lineTest = lineTest + colorState;
 					} else
 						if (goAhead == 0 && takePieceLeft == 1 && takePieceRight == 1) {
-							lineTest--;
+							lineTest = lineTest + colorState;
 							Random rand = new Random();
 							int choice = rand.nextInt(2);
 							if (choice == 0)
@@ -337,21 +353,21 @@ public class ChessMain {
 								columnTest++;
 						} else
 							if (goAhead == 1 && takePieceLeft == 0 && takePieceRight == 1) {
-								lineTest--;
+								lineTest = lineTest + colorState;
 								Random rand = new Random();
 								int choice = rand.nextInt(2);
 								if (choice == 1)
 									columnTest++;
 							}  else
 								if (goAhead == 1 && takePieceLeft == 1 && takePieceRight == 0) {
-									lineTest--;
+									lineTest = lineTest + colorState;
 									Random rand = new Random();
 									int choice = rand.nextInt(2);
 									if (choice == 1)
 										columnTest--;
 								} else
 									if (goAhead == 1 && takePieceLeft == 1 && takePieceRight == 1) {
-										lineTest--;
+										lineTest = lineTest + colorState;
 										Random rand = new Random();
 										int choice = rand.nextInt(3);
 										if (choice == 1)
@@ -377,23 +393,22 @@ public class ChessMain {
 
 		// TODO valid move;
 		table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
-		table[move.currentLine][move.currentColumn] = Piese.BLANK;
+		table[move.currentLine][move.currentColumn] = Pieces.BLANK;
 		return true;
 	}
-
-	public boolean isNumber(char value) {
-		// Alte optiuni de a testa ca s-a primit o comanda de forma a3a4 etc.
-		// idei ?
-
-		int number = 0;
-		try {
-			number = Integer.parseInt(String.valueOf(value));
-			return true;
-		} catch (NumberFormatException er) {
-			return false;
-		}
+	
+	public Position positionPiece (int piece) {
+		
+		Position pos = new Position(-1, -1);
+		for (int i = 0; i < ROWS; i++)
+			for (int j = 0; j < COLUMNS; j++)
+				if (table[i][j] == piece) {
+					pos = new Position(i, j);
+					return pos;
+				}
+		return pos;
 	}
-
+	
 	/*
 	 * Pentru testare printare matrice decomentati.
 	 */
