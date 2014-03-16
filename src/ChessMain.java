@@ -1,41 +1,38 @@
 import java.io.*;
 import java.util.Random;
 
-/* IMPORTANT !
- *  Parcurgeti codul si voi si spuneti-va parerea.
- */
-
 enum State {
-	ACTIV, NEW_GAME, FORCE, GO, INACTIVE;
+	ACTIV, INACTIVE, NONE;
 }
 
 enum Color {
 	WHITE, BLACK, NONE;
 }
 
-/*
- * END - turn atunci cand engine-ul nu mai are nicio varianta de a muta.
- */
-
 enum Turn {
 	ENGINE, PLAYER, END;
 }
 
 /*
- * Clasa Moves este folosita pentru a crea mutarile de pe tabla cu variabilele
- * sale membre destul de intuitive.
+ * Clasa Position este folosită pentru a determina poziţia unei piese pe tablă.
  */
+
 class Position {
-	
+
 	public int line;
 	public int column;
-	
+
 	public Position(int line, int column) {
-		
+
 		this.line = line;
 		this.column = column;
 	}
 }
+
+/*
+ * Clasa Moves este folosită pentru a crea mutările de pe tablă.
+ */
+
 class Moves {
 
 	public int currentLine;
@@ -45,7 +42,7 @@ class Moves {
 
 	public Moves(int currentLine, int currentColumn, int futureLine,
 			int futureColumn) {
-		
+
 		this.currentLine = currentLine;
 		this.currentColumn = currentColumn;
 		this.futureLine = futureLine;
@@ -73,16 +70,16 @@ class Pieces {
 public class ChessMain {
 
 	/*
-	 * Starea initiala jocului este inactiva, engine-ul are culoarea implicita
-	 * negru si primul pentru a muta este jucatorul, variabilele lineTest si
-	 * columTest sunt doar pentru teste.
+	 * Starea iniţială a jocului este inactivă, engine-ul are culoarea implicită
+	 * negru şi primul la rând pentru a muta este jucătorul.
 	 */
+
 	public Color engineColor = Color.BLACK;
 	public Turn turn = Turn.PLAYER;
 	public static final int COLUMNS = 8;
 	public static final int ROWS = 8;
 	public int[][] table;
-	public int lineTest = 6, columnTest = 3;
+	public int lineTest, columnTest;
 	public State state = State.INACTIVE;
 	public int colorState = -1;
 	public boolean colorChanged = false;
@@ -94,12 +91,6 @@ public class ChessMain {
 				System.in));
 		ChessMain chess = new ChessMain();
 
-		/*
-		 * http://home.hccnet.nl/h.g.muller/engine-intf.html#7 Sectiunea 9.
-		 * Commands from the engine to xboard pentru a scapa de eroarea pe care
-		 * o primeam dupa una sau doua mutari.
-		 */
-
 		System.out.println("feature sigint=0");
 		System.out.flush();
 		System.out.println("feature sigterm=0");
@@ -108,127 +99,99 @@ public class ChessMain {
 		System.out.flush();
 
 		do {
-			try {
-
-				if (chess.turn == Turn.ENGINE) {
-					if (chess.moveEngine() == false) {
-						chess.turn = Turn.END;
-					} else {
-						chess.turn = Turn.PLAYER;
-					}
-				}
-
-				/*
-				 * Daca engine-ul nu mai are mutari valide posibile si starea
-				 * jocului este activa atunci dam resign.
-				 */
-
-				if (chess.turn == Turn.END && chess.state == State.ACTIV) {
-					chess.state = State.INACTIVE;
-					System.out.println("resign");
-					System.out.flush();
-					continue;
-				}
-
-				command = buff.readLine();
-				
-				if (command.startsWith("usermove")) {
-					chess.movePlayer(command.split(" ")[1]);
-					chess.turn = Turn.ENGINE;
-					continue;
-				}
-
-				if (command.startsWith("xboard")) {
-					chess.state = State.ACTIV;
-					continue;
-				}
-
-				if (command.startsWith("new")) {
-					chess.colorState = -1;
+			if (chess.turn == Turn.ENGINE  && chess.state == State.ACTIV) {
+				if (chess.moveEngine() == false) {
+					chess.turn = Turn.END;
+				} else {
 					chess.turn = Turn.PLAYER;
-					chess.engineColor = Color.BLACK;
-					chess.state = State.ACTIV;
-					chess.initTable();
-					chess.colorChanged = false;
-					continue;
 				}
-				
-				if (command.startsWith("white") && chess.state == State.ACTIV) {
-					if (chess.colorChanged == false) {
-						chess.turn = Turn.ENGINE;
-						chess.engineColor = Color.BLACK;
-						chess.colorState = -1;
-						Position pawnPosition = chess.positionPiece(Pieces.BLACK_PAWN);
-						chess.lineTest = pawnPosition.line;
-						chess.columnTest = pawnPosition.column;
-						chess.colorChanged = true;
-					} else
-						chess.colorChanged = false;
-					// + treaba cu clock-urile nu imi e deloc clara + INVERSARE TABLA si comportament engine
-
-					continue;
-				}
-				
-				if (command.startsWith("black") && chess.state == State.ACTIV) {
-					if (chess.colorChanged == false) {
-						chess.turn = Turn.ENGINE;
-						chess.engineColor = Color.WHITE;
-						chess.colorState = 1;
-						Position pawnPosition = chess.positionPiece(Pieces.WHITE_PAWN);
-						chess.lineTest = pawnPosition.line;
-						chess.columnTest = pawnPosition.column;
-						chess.colorChanged = true;
-					} else
-						chess.colorChanged = false;
-						// + treaba cu clock-urile nu imi e deloc clara + INVERSARE TABLA si comportament engine
-					continue;
-				}
-				
-				/*
-				TODO
-				 Dubioase nu imi sunt clare;
-				 
-				if (command.startsWith("go")) {
-					
-				}
-				
-				if (command.startsWith("force")) {
-					
-				}		
-				 */
-				
-				if (command.startsWith("quit"))
-					return;
-				
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
+			/*
+			 * Dacă engine-ul nu mai are mutări valide posibile şi starea
+			 * jocului este activă atunci dăm resign apoi avem varianta new sau quit.
+			 */
+			if (chess.turn == Turn.END && chess.state == State.ACTIV) {
+				chess.state = State.INACTIVE;
+				System.out.println("resign");
+				System.out.flush();
+				continue;
+			}
+
+			command = buff.readLine();
+
+			if (command.startsWith("usermove")  && chess.state == State.ACTIV) {
+				chess.movePlayer(command.split(" ")[1]);
+				chess.turn = Turn.ENGINE;
+				continue;
+			}
+
+			if (command.startsWith("xboard")) {
+				chess.state = State.ACTIV;
+				continue;
+			}
+			/*
+			 * Sunt reiniţializate toate variabilele.
+			 */
+			if (command.startsWith("new")) {
+				chess.colorState = -1;
+				chess.turn = Turn.PLAYER;
+				chess.engineColor = Color.BLACK;
+				chess.state = State.ACTIV;
+				chess.initTable();
+				chess.colorChanged = false;
+				continue;
+			}
+
+			if (command.startsWith("white") && chess.state == State.ACTIV) {
+				if (chess.colorChanged == true) {
+					chess.turn = Turn.ENGINE;
+					chess.engineColor = Color.WHITE;
+					chess.colorState = 1;
+					Position pawnPosition = chess.positionPiece(Pieces.WHITE_PAWN);
+					chess.lineTest = pawnPosition.line;
+					chess.columnTest = pawnPosition.column;
+					chess.colorChanged = false;
+				} else
+					chess.colorChanged = true;
+				continue;
+			}
+
+			if (command.startsWith("black") && chess.state == State.ACTIV) {
+				if (chess.colorChanged == true) {
+					chess.turn = Turn.ENGINE;
+					chess.engineColor = Color.BLACK;
+					chess.colorState = -1;
+					Position pawnPosition = chess.positionPiece(Pieces.BLACK_PAWN);
+					chess.lineTest = pawnPosition.line;
+					chess.columnTest = pawnPosition.column;
+					chess.colorChanged = false;
+				} else
+					chess.colorChanged = true;
+				continue;
+			}
+			if (command.startsWith("force")) {
+				continue;
+			}
+			if (command.startsWith("go")) {
+				continue;
+			}
+			if (command.startsWith("quit"))
+				return;
+
 		} while (true);
 	}
-	
-	/* 
-	public void reverseTable() {
 
-		int aux;
-		for (int i = 0; i < ROWS / 2; i++)
-			for (int j = 0; j < COLUMNS; j++) {
-				aux = table[i][j];
-				table[i][j] = table[ROWS - i - 1][COLUMNS - j - 1];
-				table[ROWS - i - 1][COLUMNS - j - 1] = aux;
-			}
-	}
-	*/
-	
 	public void initTable() {
 
-		lineTest = 6;
+		lineTest = 6; // Pion negru d6 de plecare.
 		columnTest = 3;
+
 		table = new int[ROWS][COLUMNS];
 		for (int i = 0; i < ROWS; ++i)
 			for (int j = 0; j < COLUMNS; ++j)
 				table[i][j] = 0;
 
-		for (int i = 0; i < 8; ++i) {
+		for (int i = 0; i < COLUMNS; ++i) {
 			table[1][i] = Pieces.WHITE_PAWN;
 			table[6][i] = Pieces.BLACK_PAWN;
 		}
@@ -250,8 +213,8 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metoda pentru a decodifica comanda primita de la xboard din partea
-	 * jucatorului returneaza mutarea.
+	 * Metodă pentru a decodifica comanda primită de la xboard din partea
+	 * playerul-ui şi returnează mutarea reprezentând indicii din matrice.
 	 */
 
 	public Moves decodeMove(String moveCommand) {
@@ -270,13 +233,13 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metoda pentru a codifica o mutare a engine-ului pentru a transmite-o
-	 * xbordului. returneaza StringBufferul de forma a2a3 etc. .
+	 * Metodă pentru a codifica o mutare a engine-ului pentru a transmite-o
+	 * xbordului, returnează StringBufferul de forma a2a3 etc. .
 	 */
 
 	public StringBuffer encodeMove(Moves move) {
 
-		StringBuffer moveEngine = new StringBuffer(100000);
+		StringBuffer moveEngine = new StringBuffer(20);
 
 		moveEngine.append("move ");
 		moveEngine.append((char) ('a' + move.currentColumn));
@@ -288,7 +251,7 @@ public class ChessMain {
 	}
 
 	/*
-	 * Mutarea jucatorului.
+	 * Mutarea playerul-ui.
 	 */
 
 	public boolean movePlayer(String moveCommand) {
@@ -300,26 +263,27 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metoda de determinare a urmatoarei mutari a engine-ului este
-	 * extrem de primitiva in sensul ca verifca daca intalneste piese de
-	 * culoarea inversa.
+	 * Metodă ce determină următoarea mutare a engine-ului şi returnează
+	 * true dacă mai există mutări valide şi execută mutarea şi false în
+	 * caz contrar.(more in README).
 	 */
 
 	public boolean moveEngine() {
-		
+	
 		int currentLine, currentColumn;
 		currentLine = lineTest;
 		currentColumn = columnTest;
 		
-		// piesa i-a fost luata deci da resign;
+		if (currentLine == 7)
+			return false; 											// a ajuns pe ultima linie.
 		if (currentLine == 0)
-			return false; // sau sa ia tot cu regina
-		if ((-colorState) * table[currentLine][currentColumn] > 0)
-			return false; 
-		
+			return false; 											// a ajuns pe ultima linie.
+		if ((-colorState) * table[currentLine][currentColumn] > 0)	
+			return false; 											// piesa cu care muta i-a fost luată.
+	
 		int takePieceLeft, takePieceRight, goAhead;
 		takePieceLeft = takePieceRight = goAhead = 0;
-		
+	
 		if (table[lineTest + colorState][columnTest] == 0)
 			goAhead = 1;
 		if (columnTest - 1 >= 0)
@@ -328,9 +292,9 @@ public class ChessMain {
 		if (columnTest + 1 < 8)
 			if ((-colorState) * table[lineTest + colorState][columnTest + 1] > 0)
 				takePieceRight = 1;
-		
+
 		if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 0)
-			return false;
+			return false;											// nu are opţiuni.
 		else
 			if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 1) {
 				lineTest = lineTest + colorState;
@@ -375,51 +339,47 @@ public class ChessMain {
 										if (choice == 2)
 											columnTest++;
 									}
-	
+
 		Moves move = new Moves(currentLine, currentColumn, lineTest, columnTest);
 		StringBuffer moveEngine = encodeMove(move);
 		makeMove(move);
 		System.out.println(moveEngine);
 		System.out.flush();
-		
+
 		return true;
 	}
 
 	/*
-	 * Metoda ce realizeaza mutarea pe tabla (matrice).
+	 * Metodă ce realizeaza mutarea pe tablă (matrice).
 	 */
 
 	public boolean makeMove(Moves move) {
-
-		// TODO valid move;
+		
 		table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
 		table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+
 		return true;
 	}
 	
+	/*
+	 * Metodă ce determină poziţia pe tabla a primei apariţii a
+	 * unei anumite piese. (pion în cazul nostru white/black)
+	 * folosită atunci când se schimbă culorile şi engine-ul
+	 * îşi alege primul pion pentru a-l muta.
+	 */
+
 	public Position positionPiece (int piece) {
-		
+
 		Position pos = new Position(-1, -1);
+
 		for (int i = 0; i < ROWS; i++)
 			for (int j = 0; j < COLUMNS; j++)
 				if (table[i][j] == piece) {
 					pos = new Position(i, j);
 					return pos;
 				}
-		return pos;
-	}
-	
-	/*
-	 * Pentru testare printare matrice decomentati.
-	 */
 
-	
-	  public void printMatrix() {
-		  for (int line = 0; line < 8; ++line) {
-			  for (int col = 0; col < 8; ++col) 
-				  System.out.print(table[line][col] + " ");
-			  System.out.println();
-		  }
-	  }
-	 
+		return pos;
+	} 
 }
+
