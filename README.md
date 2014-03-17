@@ -8,7 +8,7 @@ Materie: Proiectarea Algoritmilor
 
 Etapa I:
 	Majoritatea metodelor implementate în cadrul acestei etape sunt
-scurte şi comentate suficient în cod şi vom încerca în Readme să explicăm
+scurte şi comentate suficient în cod. Vom încerca în Readme să explicăm
 metodele şi variabilele care pot reprezenta o sursă de ambiguitate:
 
 Metoda "moveEngine()" mută un pion, explicaţii:
@@ -52,4 +52,17 @@ comanda Machine Black trece engine-ul pe negru şi este rândul engine-ului nici
 	Mai departe am deschis fişierul de debug şi am remarcat că xboard-ul trimitea următoarele comenzi la acţionarea Machine White: "black"
 urmată imediat de comanda "white".
 	În urma acestor observaţii am implementat cele două comenzi.
+	
+==================================================================================
+	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
 
+	Fișiere adiționale:
+		- Makefile - pe lângă fișierul sursă cu extensia .java, am adăugat și un fișier Makefile care are
+			     implementate funcțiile: build, clean și default.
+			   - default: executarea comenzii "make" fără argumente, duce la executarea implicită a
+			   	       comenzii "build"
+			   - build: executarea comenzii "make" cu argumentul "build", are rolul de a compila sursa
+			  	     .java (javac ChessMain.java), generând fișierele executabile .class, și oferindu-le
+				     permisiuni de execuție (chmod 777 *.class) pentru a putea fii încărcate de xboard
+			   - clean: executarea comenzii "make" cu argumetul "clean", are rolul de a șterge toate
+			   	    fișierele executabile (*.class), generate în urma compilării sursei.
