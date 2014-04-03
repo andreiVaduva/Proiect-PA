@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.ArrayList;
 import java.util.Random;
 
 enum State {
@@ -79,10 +80,12 @@ public class ChessMain {
 	public static final int COLUMNS = 8;
 	public static final int ROWS = 8;
 	public int[][] table;
-	public int lineTest, columnTest;
 	public State state = State.INACTIVE;
 	public int colorState = -1;
 	public boolean colorChanged = false;
+	public static ArrayList<Moves> allmoves = new ArrayList<Moves>();
+	public String[] king_side_castling = { "e1g1", "e8g8" };
+	public String[] queen_side_castling = { "e1c1", "e8c8" };
 
 	public static void main(String[] args) throws IOException {
 
@@ -99,7 +102,9 @@ public class ChessMain {
 		System.out.flush();
 
 		do {
-			if (chess.turn == Turn.ENGINE  && chess.state == State.ACTIV) {
+			if (chess.turn == Turn.ENGINE && chess.state == State.ACTIV) {
+				allmoves = new ArrayList<Moves>();
+				allmoves = chess.generateAllMoves();
 				if (chess.moveEngine() == false) {
 					chess.turn = Turn.END;
 				} else {
@@ -108,7 +113,8 @@ public class ChessMain {
 			}
 			/*
 			 * Dacă engine-ul nu mai are mutări valide posibile şi starea
-			 * jocului este activă atunci dăm resign apoi avem varianta new sau quit.
+			 * jocului este activă atunci dăm resign apoi avem varianta new sau
+			 * quit.
 			 */
 			if (chess.turn == Turn.END && chess.state == State.ACTIV) {
 				chess.state = State.INACTIVE;
@@ -119,7 +125,7 @@ public class ChessMain {
 
 			command = buff.readLine();
 
-			if (command.startsWith("usermove")  && chess.state == State.ACTIV) {
+			if (command.startsWith("usermove") && chess.state == State.ACTIV) {
 				chess.movePlayer(command.split(" ")[1]);
 				chess.turn = Turn.ENGINE;
 				continue;
@@ -147,9 +153,6 @@ public class ChessMain {
 					chess.turn = Turn.ENGINE;
 					chess.engineColor = Color.WHITE;
 					chess.colorState = 1;
-					Position pawnPosition = chess.positionPiece(Pieces.WHITE_PAWN);
-					chess.lineTest = pawnPosition.line;
-					chess.columnTest = pawnPosition.column;
 					chess.colorChanged = false;
 				} else
 					chess.colorChanged = true;
@@ -161,9 +164,6 @@ public class ChessMain {
 					chess.turn = Turn.ENGINE;
 					chess.engineColor = Color.BLACK;
 					chess.colorState = -1;
-					Position pawnPosition = chess.positionPiece(Pieces.BLACK_PAWN);
-					chess.lineTest = pawnPosition.line;
-					chess.columnTest = pawnPosition.column;
 					chess.colorChanged = false;
 				} else
 					chess.colorChanged = true;
@@ -183,10 +183,8 @@ public class ChessMain {
 
 	public void initTable() {
 
-		lineTest = 6; // Pion negru d6 de plecare.
-		columnTest = 3;
-
 		table = new int[ROWS][COLUMNS];
+
 		for (int i = 0; i < ROWS; ++i)
 			for (int j = 0; j < COLUMNS; ++j)
 				table[i][j] = 0;
@@ -257,92 +255,489 @@ public class ChessMain {
 	public boolean movePlayer(String moveCommand) {
 
 		Moves move = decodeMove(moveCommand);
-		if (makeMove(move))
+
+		if (moveCommand.endsWith("q")) {
+			makeMove(move, 1);
 			return true;
-		return false;
+		}
+
+		if (king_side_castling[0].equals(moveCommand)
+				|| king_side_castling[1].equals(moveCommand)) {
+			makeKingCastling(move);
+			return true;
+		}
+
+		if (queen_side_castling[0].equals(moveCommand)
+				|| queen_side_castling[1].equals(moveCommand)) {
+			makeQueenCastling(move);
+			return true;
+		}
+
+		makeMove(move, 0);
+		return true;
+
 	}
 
 	/*
-	 * Metodă ce determină următoarea mutare a engine-ului şi returnează
-	 * true dacă mai există mutări valide şi execută mutarea şi false în
-	 * caz contrar.(more in README).
+	 * Metoda genereaza lista de mutari posibile ale tuturor pieselor
+	 * engine-ului, obtinand lista de "allmoves".
+	 */
+
+	public ArrayList<Moves> generateAllMoves() {
+
+		ArrayList<Moves> allmoves = new ArrayList<Moves>();
+
+		for (int i = 0; i < ROWS; i++)
+			for (int j = 0; j < COLUMNS; j++) {
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_PAWN * (-colorState))
+					allmoves.addAll(generateAllMovesPaws(new Position(i, j)));
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_HORSE * (-colorState))
+					allmoves.addAll(generateAllMovesHorse(new Position(i, j)));
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_BISHOP * (-colorState))
+					allmoves.addAll(generateAllMovesBishop(new Position(i, j)));
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_ROOK * (-colorState))
+					allmoves.addAll(generateAllMovesRook(new Position(i, j)));
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_QUEEN * (-colorState))
+					allmoves.addAll(generateAllMovesQueen(new Position(i, j)));
+				if ((-colorState) * table[i][j] < 0
+						&& table[i][j] == Pieces.BLACK_KING * (-colorState))
+					allmoves.addAll(generateAllMovesKing(new Position(i, j)));
+			}
+
+		return allmoves;
+	}
+
+	/*
+	 * Metoda returneaza mutarile posibile pentru un pion printre care si
+	 * deschiderea pionului cu doua pozitii in fata. (-colorState) *
+	 * table[initialposition.line + colorState][initialposition.column - 1] > 0
+	 * se traduce prin faptul ca pe acea pozitie din tabla se afla o piesa a
+	 * adversarului, < 0 inseamna ca este piesa proprie engine-ului.
+	 * initialposition.line + colorState - linia creste sau scade in functie de
+	 * culoarea engine-ului.
+	 */
+
+	public ArrayList<Moves> generateAllMovesPaws(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+
+		if (initialposition.line + colorState < ROWS
+				&& initialposition.line + colorState >= 0)
+			if (table[initialposition.line + colorState][initialposition.column] == 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line
+								+ colorState, initialposition.column));
+
+		if (initialposition.line + colorState < ROWS
+				&& initialposition.column - 1 >= 0
+				&& initialposition.line + colorState >= 0)
+			if ((-colorState)
+					* table[initialposition.line + colorState][initialposition.column - 1] > 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line
+								+ colorState, initialposition.column - 1));
+
+		if (initialposition.line + colorState < ROWS
+				&& initialposition.column + 1 < COLUMNS
+				&& initialposition.line + colorState >= 0)
+			if ((-colorState)
+					* table[initialposition.line + colorState][initialposition.column + 1] > 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line
+								+ colorState, initialposition.column + 1));
+
+		if (colorState == 1)
+			if (initialposition.line == 1)
+				if (table[initialposition.line + 1][initialposition.column] == 0)
+					if (table[initialposition.line + 2][initialposition.column] == 0)
+						moves.add(new Moves(initialposition.line,
+								initialposition.column,
+								initialposition.line + 2,
+								initialposition.column));
+
+		if (colorState == -1)
+			if (initialposition.line == 6)
+				if (table[initialposition.line - 1][initialposition.column] == 0)
+					if (table[initialposition.line - 2][initialposition.column] == 0)
+						moves.add(new Moves(initialposition.line,
+								initialposition.column,
+								initialposition.line - 2,
+								initialposition.column));
+
+		return moves;
+	}
+
+	/*
+	 * Metoda returneaza mutarile posibile pentru cal, avand maxim opt mutari
+	 * valide. Mutarea este valida daca pe pozitia viitoare se gaseste o piesa a
+	 * adversarului sau este libera.
+	 */
+
+	public ArrayList<Moves> generateAllMovesHorse(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+
+		if (initialposition.line + 2 < ROWS
+				&& initialposition.column + 1 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line + 2][initialposition.column + 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 2,
+						initialposition.column + 1));
+
+		if (initialposition.line + 2 < ROWS && initialposition.column - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line + 2][initialposition.column - 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 2,
+						initialposition.column - 1));
+
+		if (initialposition.line + 1 < ROWS
+				&& initialposition.column + 2 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line + 1][initialposition.column + 2] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 1,
+						initialposition.column + 2));
+
+		if (initialposition.line + 1 < ROWS && initialposition.column - 2 >= 0)
+			if ((-colorState)
+					* table[initialposition.line + 1][initialposition.column - 2] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 1,
+						initialposition.column - 2));
+
+		if (initialposition.line - 2 >= 0
+				&& initialposition.column + 1 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line - 2][initialposition.column + 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 2,
+						initialposition.column + 1));
+
+		if (initialposition.line - 2 >= 0 && initialposition.column - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line - 2][initialposition.column - 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 2,
+						initialposition.column - 1));
+
+		if (initialposition.line - 1 >= 0
+				&& initialposition.column + 2 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line - 1][initialposition.column + 2] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 1,
+						initialposition.column + 2));
+
+		if (initialposition.line - 1 >= 0 && initialposition.column - 2 >= 0)
+			if ((-colorState)
+					* table[initialposition.line - 1][initialposition.column - 2] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 1,
+						initialposition.column - 2));
+
+		return moves;
+	}
+
+	/*
+	 * Metoda returneaza toate mutarile valide pentru nebun. (More in Readme)
+	 */
+
+	public ArrayList<Moves> generateAllMovesBishop(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+		int line, column;
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line + 1) < ROWS && (column + 1) < COLUMNS) {
+			if (table[line + 1][column + 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column + 1));
+				line++;
+				column++;
+			} else if ((-colorState) * table[line + 1][column + 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column + 1));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line + 1) < ROWS && (column - 1) >= 0) {
+			if (table[line + 1][column - 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column - 1));
+				line++;
+				column--;
+			} else if ((-colorState) * table[line + 1][column - 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column - 1));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line - 1) >= 0 && (column + 1) < COLUMNS) {
+			if (table[line - 1][column + 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column + 1));
+				line--;
+				column++;
+			} else if ((-colorState) * table[line - 1][column + 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column + 1));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line - 1) >= 0 && (column - 1) >= 0) {
+			if (table[line - 1][column - 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column - 1));
+				line--;
+				column--;
+			} else if ((-colorState) * table[line - 1][column - 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column - 1));
+				break;
+			} else
+				break;
+		}
+
+		return moves;
+	}
+
+	/*
+	 * Metoda returneaza toate mutarile valide pentru tura. (More in Readme)
+	 */
+
+	public ArrayList<Moves> generateAllMovesRook(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+		int line, column;
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line + 1) < ROWS) {
+			if (table[line + 1][column] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column));
+				line++;
+			} else if ((-colorState) * table[line + 1][column] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line + 1, column));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((line - 1) >= 0) {
+			if (table[line - 1][column] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column));
+				line--;
+			} else if ((-colorState) * table[line - 1][column] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line - 1, column));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((column + 1) < COLUMNS) {
+			if (table[line][column + 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line, column + 1));
+				column++;
+			} else if ((-colorState) * table[line][column + 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line, column + 1));
+				break;
+			} else
+				break;
+		}
+
+		line = initialposition.line;
+		column = initialposition.column;
+
+		while ((column - 1) >= 0) {
+			if (table[line][column - 1] == 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line, column - 1));
+				column--;
+			} else if ((-colorState) * table[line][column - 1] > 0) {
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, line, column - 1));
+				break;
+			} else
+				break;
+		}
+
+		return moves;
+	}
+
+	/*
+	 * Metoda returneaza toate mutarile valide pentru regina, combinand mutarile
+	 * posibile pentru comportamentul asemanator unei ture cu cele posibile
+	 * pentru un comportament asemenator cu al unui nebun.
+	 */
+	public ArrayList<Moves> generateAllMovesQueen(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+
+		moves.addAll(generateAllMovesBishop(initialposition));
+		moves.addAll(generateAllMovesRook(initialposition));
+
+		return moves;
+	}
+
+	/*
+	 * Metoda genereaza toate mutarile valide pentru rege, avand maxim opt
+	 * mutari valide.
+	 */
+	public ArrayList<Moves> generateAllMovesKing(Position initialposition) {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+
+		if (initialposition.line + 1 < ROWS)
+			if ((-colorState)
+					* table[initialposition.line + 1][initialposition.column] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 1,
+						initialposition.column));
+
+		if (initialposition.line - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line - 1][initialposition.column] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 1,
+						initialposition.column));
+
+		if (initialposition.column + 1 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line][initialposition.column + 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line,
+						initialposition.column + 1));
+
+		if (initialposition.column - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line][initialposition.column - 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line,
+						initialposition.column - 1));
+
+		if (initialposition.line + 1 < ROWS
+				&& initialposition.column + 1 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line + 1][initialposition.column + 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 1,
+						initialposition.column + 1));
+
+		if (initialposition.line - 1 >= 0
+				&& initialposition.column + 1 < COLUMNS)
+			if ((-colorState)
+					* table[initialposition.line - 1][initialposition.column + 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 1,
+						initialposition.column + 1));
+
+		if (initialposition.line + 1 < ROWS && initialposition.column - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line + 1][initialposition.column - 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line + 1,
+						initialposition.column - 1));
+
+		if (initialposition.line - 1 >= 0 && initialposition.column - 1 >= 0)
+			if ((-colorState)
+					* table[initialposition.line - 1][initialposition.column - 1] >= 0)
+				moves.add(new Moves(initialposition.line,
+						initialposition.column, initialposition.line - 1,
+						initialposition.column - 1));
+
+		return moves;
+	}
+
+	/*
+	 * Metoda creeaza si returneaza o copia a tablei(matrice) de joc.
+	 */
+
+	public int[][] tableCopy(int[][] table) {
+
+		int[][] table_copy = new int[ROWS][COLUMNS];
+
+		for (int i = 0; i < ROWS; i++)
+			for (int j = 0; j < COLUMNS; j++)
+				table_copy[i][j] = table[i][j];
+
+		return table_copy;
+	}
+
+	/*
+	 * Metoda construieste lista de mutari valide, prin mutari valide
+	 * intelegandu-se acele mutari care scot regele din pozitia de sah in cazul
+	 * in care se afla in aceasta situatie sau nu lasa regele in pozitie de sah
+	 * prin mutarea facuta. (More in Readme)
+	 */
+	public ArrayList<Moves> checkMoves() {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+		int[][] table_copy;
+
+		for (Moves move : allmoves) {
+			table_copy = tableCopy(table);
+			table_copy[move.futureLine][move.futureColumn] = table_copy[move.currentLine][move.currentColumn];
+			table_copy[move.currentLine][move.currentColumn] = Pieces.BLANK;
+			if (!check(table_copy))
+				moves.add(move);
+		}
+
+		return moves;
+	}
+
+	/*
+	 * Metoda alege random din mutarile trecute prin "filtrul" de "check" si o
+	 * transmite catre xboard.
 	 */
 
 	public boolean moveEngine() {
-	
-		int currentLine, currentColumn;
-		currentLine = lineTest;
-		currentColumn = columnTest;
-		
-		if (currentLine == 7)
-			return false; 											// a ajuns pe ultima linie.
-		if (currentLine == 0)
-			return false; 											// a ajuns pe ultima linie.
-		if ((-colorState) * table[currentLine][currentColumn] > 0)	
-			return false; 											// piesa cu care muta i-a fost luată.
-	
-		int takePieceLeft, takePieceRight, goAhead;
-		takePieceLeft = takePieceRight = goAhead = 0;
-	
-		if (table[lineTest + colorState][columnTest] == 0)
-			goAhead = 1;
-		if (columnTest - 1 >= 0)
-			if ((-colorState) * table[lineTest + colorState][columnTest - 1] > 0)
-				takePieceLeft = 1;
-		if (columnTest + 1 < 8)
-			if ((-colorState) * table[lineTest + colorState][columnTest + 1] > 0)
-				takePieceRight = 1;
 
-		if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 0)
-			return false;											// nu are opţiuni.
-		else
-			if (goAhead == 0 && takePieceLeft == 0 && takePieceRight == 1) {
-				lineTest = lineTest + colorState;
-				columnTest++;
-			} else
-				if (goAhead == 0 && takePieceLeft == 1 && takePieceRight == 0) {
-					lineTest = lineTest + colorState;
-					columnTest--;
-				} else
-					if (goAhead == 1 && takePieceLeft == 0 && takePieceRight == 0) {
-						lineTest = lineTest + colorState;
-					} else
-						if (goAhead == 0 && takePieceLeft == 1 && takePieceRight == 1) {
-							lineTest = lineTest + colorState;
-							Random rand = new Random();
-							int choice = rand.nextInt(2);
-							if (choice == 0)
-								columnTest--;
-							else
-								columnTest++;
-						} else
-							if (goAhead == 1 && takePieceLeft == 0 && takePieceRight == 1) {
-								lineTest = lineTest + colorState;
-								Random rand = new Random();
-								int choice = rand.nextInt(2);
-								if (choice == 1)
-									columnTest++;
-							}  else
-								if (goAhead == 1 && takePieceLeft == 1 && takePieceRight == 0) {
-									lineTest = lineTest + colorState;
-									Random rand = new Random();
-									int choice = rand.nextInt(2);
-									if (choice == 1)
-										columnTest--;
-								} else
-									if (goAhead == 1 && takePieceLeft == 1 && takePieceRight == 1) {
-										lineTest = lineTest + colorState;
-										Random rand = new Random();
-										int choice = rand.nextInt(3);
-										if (choice == 1)
-											columnTest--;
-										if (choice == 2)
-											columnTest++;
-									}
+		ArrayList<Moves> moves = new ArrayList<Moves>();
 
-		Moves move = new Moves(currentLine, currentColumn, lineTest, columnTest);
+		moves = checkMoves();
+		if (moves.size() == 0)
+			return false;
+		Moves move = moves.get(new Random().nextInt(moves.size()));
 		StringBuffer moveEngine = encodeMove(move);
-		makeMove(move);
+		if (move.futureLine == 0 || move.futureLine == 7)
+			makeMove(move, 1);
+		else
+			makeMove(move, 0);
 		System.out.println(moveEngine);
 		System.out.flush();
 
@@ -350,36 +745,481 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metodă ce realizeaza mutarea pe tablă (matrice).
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata pe aceeasi
+	 * coloana si situat deasupra. (More in Readme)
 	 */
 
-	public boolean makeMove(Moves move) {
-		
+	public boolean check_up(int[][] table_copy, int kingLine, int kingColumn) {
+
+		int ownPiece, oppPiece, i;
+		ownPiece = 0;
+		oppPiece = 0;
+
+		for (i = kingLine + 1; i < ROWS; i++) {
+			if ((-colorState) * table_copy[i][kingColumn] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[i][kingColumn] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1)
+				if (table_copy[i][kingColumn] == Pieces.BLACK_ROOK * colorState
+						|| table_copy[i][kingColumn] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata pe aceeasi
+	 * coloana si situat dedesubt. (More in Readme)
+	 */
+
+	public boolean check_down(int[][] table_copy, int kingLine, int kingColumn) {
+
+		int ownPiece, oppPiece, i;
+		ownPiece = 0;
+		oppPiece = 0;
+
+		for (i = kingLine - 1; i >= 0; i--) {
+			if ((-colorState) * table_copy[i][kingColumn] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[i][kingColumn] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1)
+				if (table_copy[i][kingColumn] == Pieces.BLACK_ROOK * colorState
+						|| table_copy[i][kingColumn] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata pe aceeasi
+	 * linie si situat la dreapta. (More in Readme)
+	 */
+
+	public boolean check_right(int[][] table_copy, int kingLine, int kingColumn) {
+
+		int ownPiece, oppPiece, i;
+		ownPiece = 0;
+		oppPiece = 0;
+
+		for (i = kingColumn + 1; i < COLUMNS; i++) {
+			if ((-colorState) * table_copy[kingLine][i] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[kingLine][i] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1)
+				if (table_copy[kingLine][i] == Pieces.BLACK_ROOK * colorState
+						|| table_copy[kingLine][i] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata pe aceeasi
+	 * linie si situat la stanga. (More in Readme)
+	 */
+
+	public boolean check_left(int[][] table_copy, int kingLine, int kingColumn) {
+
+		int ownPiece, oppPiece, i;
+		ownPiece = 0;
+		oppPiece = 0;
+
+		for (i = kingColumn - 1; i >= 0; i--) {
+			if ((-colorState) * table_copy[kingLine][i] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[kingLine][i] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1)
+				if (table_copy[kingLine][i] == Pieces.BLACK_ROOK * colorState
+						|| table_copy[kingLine][i] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata in
+	 * diagonala sa si anume in partea dreapta deasupra. (More in Readme)
+	 */
+
+	public boolean check_rightUp(int[][] table_copy, int kingLine,
+			int kingColumn) {
+
+		int ownPiece, oppPiece, line, column;
+		ownPiece = 0;
+		oppPiece = 0;
+		line = kingLine;
+		column = kingColumn;
+
+		while (line < ROWS - 1 && column < COLUMNS - 1) {
+			line++;
+			column++;
+			if ((-colorState) * table_copy[line][column] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[line][column] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1) {
+				if (table_copy[line][column] == Pieces.BLACK_BISHOP
+						* colorState
+						|| table_copy[line][column] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+				if (colorState == 1)
+					if (table_copy[line][column] == Pieces.BLACK_PAWN)
+						if (line == kingLine + 1 && column == kingColumn + 1)
+							return true;
+			}
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata in
+	 * diagonala sa si anume in partea dreapta dedesubt. (More in Readme)
+	 */
+
+	public boolean check_rightDown(int[][] table_copy, int kingLine,
+			int kingColumn) {
+
+		int ownPiece, oppPiece, line, column;
+		ownPiece = 0;
+		oppPiece = 0;
+		line = kingLine;
+		column = kingColumn;
+
+		while (line > 0 && column < COLUMNS - 1) {
+			line--;
+			column++;
+			if ((-colorState) * table_copy[line][column] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[line][column] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1) {
+				if (table_copy[line][column] == Pieces.BLACK_BISHOP
+						* colorState
+						|| table_copy[line][column] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+				if (colorState == -1)
+					if (table_copy[line][column] == Pieces.WHITE_PAWN)
+						if (line == kingLine - 1 && column == kingColumn + 1)
+							return true;
+			}
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata in
+	 * diagonala sa si anume in partea stanga deasupra. (More in Readme)
+	 */
+
+	public boolean check_leftUp(int[][] table_copy, int kingLine, int kingColumn) {
+
+		int ownPiece, oppPiece, line, column;
+		ownPiece = 0;
+		oppPiece = 0;
+		line = kingLine;
+		column = kingColumn;
+
+		while (line < ROWS - 1 && column > 0) {
+			line++;
+			column--;
+			if ((-colorState) * table_copy[line][column] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[line][column] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1) {
+				if (table_copy[line][column] == Pieces.BLACK_BISHOP
+						* colorState
+						|| table_copy[line][column] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+				if (colorState == 1)
+					if (table_copy[line][column] == Pieces.BLACK_PAWN)
+						if (line == kingLine + 1 && column == kingColumn - 1)
+							return true;
+			}
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de o piesa aflata in
+	 * diagonala sa si anume in partea stanga dedesubt. (More in Readme)
+	 */
+
+	public boolean check_leftDown(int[][] table_copy, int kingLine,
+			int kingColumn) {
+
+		int ownPiece, oppPiece, line, column;
+		ownPiece = 0;
+		oppPiece = 0;
+		line = kingLine;
+		column = kingColumn;
+
+		while (line > 0 && column > 0) {
+			line--;
+			column--;
+			if ((-colorState) * table_copy[line][column] < 0) {
+				ownPiece = 1;
+				break;
+			}
+			if ((-colorState) * table_copy[line][column] > 0) {
+				oppPiece = 1;
+				break;
+			}
+		}
+
+		if (ownPiece == 0)
+			if (oppPiece == 1) {
+				if (table_copy[line][column] == Pieces.BLACK_BISHOP
+						* colorState
+						|| table_copy[line][column] == Pieces.BLACK_QUEEN
+								* colorState)
+					return true;
+				if (colorState == -1)
+					if (table_copy[line][column] == Pieces.WHITE_PAWN)
+						if (line == kingLine - 1 && column == kingColumn - 1)
+							return true;
+			}
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este pus in sah de un cal, ce se poate afla
+	 * intr-un din cele opt pozitii posibile.
+	 */
+
+	public boolean check_Horse(int[][] table_copy, int kingLine, int kingColumn) {
+
+		if (kingLine + 2 < ROWS && kingColumn + 1 < COLUMNS)
+			if (table_copy[kingLine + 2][kingColumn + 1] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine + 2 < ROWS && kingColumn - 1 >= 0)
+			if (table_copy[kingLine + 2][kingColumn - 1] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine + 1 < ROWS && kingColumn + 2 < COLUMNS)
+			if (table_copy[kingLine + 1][kingColumn + 2] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine + 1 < ROWS && kingColumn - 2 >= 0)
+			if (table_copy[kingLine + 1][kingColumn - 2] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine - 2 >= 0 && kingColumn + 1 < COLUMNS)
+			if (table_copy[kingLine - 2][kingColumn + 1] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine - 2 >= 0 && kingColumn - 1 >= 0)
+			if (table_copy[kingLine - 2][kingColumn - 1] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine - 1 >= 0 && kingColumn - 2 >= 0)
+			if (table_copy[kingLine - 1][kingColumn - 2] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+		if (kingLine - 1 >= 0 && kingColumn + 2 < COLUMNS)
+			if (table_copy[kingLine - 1][kingColumn + 2] == Pieces.BLACK_HORSE
+					* colorState)
+				return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda verifica daca regele este mutat in apropierea regelui advers,
+	 * mutarea fiind ilegala.
+	 */
+
+	public boolean check_King(int[][] table_copy, int kingLine, int kingColumn) {
+
+		if (kingLine + 1 < ROWS)
+			if (table_copy[kingLine + 1][kingColumn] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingLine - 1 >= 0)
+			if (table_copy[kingLine - 1][kingColumn] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingColumn - 1 >= 0)
+			if (table_copy[kingLine][kingColumn - 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingColumn + 1 < COLUMNS)
+			if (table_copy[kingLine][kingColumn + 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingLine + 1 < ROWS && kingColumn + 1 < COLUMNS)
+			if (table_copy[kingLine + 1][kingColumn + 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingLine - 1 >= 0 && kingColumn + 1 < COLUMNS)
+			if (table_copy[kingLine - 1][kingColumn + 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingLine + 1 < ROWS && kingColumn - 1 >= 0)
+			if (table_copy[kingLine + 1][kingColumn - 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+		if (kingLine - 1 >= 0 && kingColumn - 1 >= 0)
+			if (table_copy[kingLine - 1][kingColumn - 1] == Pieces.BLACK_KING
+					* colorState)
+				return true;
+
+		return false;
+	}
+
+	/*
+	 * Metoda determina pozitia actuala a regelui pe tabla si apoi apeleaza
+	 * toate variantele posibile prin care acesta s-ar putea afla in pozitie de
+	 * sah, returnand true daca este in sah si false in caz contrar.
+	 */
+
+	public boolean check(int[][] table_copy) {
+
+		int kingLine, kingColumn, i = 0, j = 0, found = 0;
+
+		for (i = 0; i < ROWS; i++) {
+			for (j = 0; j < COLUMNS; j++)
+				if (table_copy[i][j] == Pieces.BLACK_KING * (-colorState)) {
+					found = 1;
+					break;
+				}
+			if (found == 1)
+				break;
+		}
+
+		kingLine = i;
+		kingColumn = j;
+
+		if (check_up(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_down(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_left(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_right(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_rightUp(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_rightDown(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_leftUp(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_leftDown(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_Horse(table_copy, kingLine, kingColumn))
+			return true;
+		if (check_King(table_copy, kingLine, kingColumn))
+			return true;
+
+		return false;
+	}
+
+	/*
+	 * Metodă ce realizeaza mutarea pe tablă (matrice), daca o piesa ajunge pe
+	 * ultima linie din tabla atunci changePawn este egal cu 1, si atunci se
+	 * verifica daca acea piesa este PAWN, deoarece acesta se schimba in regina
+	 * odata ajuns pe ultima linie.
+	 */
+
+	public void makeMove(Moves move, int changePawn) {
+
+		if (changePawn == 0) {
+			table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+			table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+		} else {
+			if (table[move.currentLine][move.currentColumn] == Pieces.WHITE_PAWN)
+				table[move.futureLine][move.futureColumn] = Pieces.WHITE_QUEEN;
+			else if (table[move.currentLine][move.currentColumn] == Pieces.BLACK_PAWN)
+				table[move.futureLine][move.futureColumn] = Pieces.BLACK_QUEEN;
+			else
+				table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+			table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+		}
+	}
+
+	/*
+	 * Implementare rocada.
+	 */
+
+	public void makeKingCastling(Moves move) {
+
 		table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
 		table[move.currentLine][move.currentColumn] = Pieces.BLANK;
-
-		return true;
+		table[move.futureLine][move.futureColumn - 1] = table[move.currentLine][move.futureColumn + 1];
+		table[move.futureLine][move.futureColumn + 1] = Pieces.BLANK;
 	}
-	
+
 	/*
-	 * Metodă ce determină poziţia pe tabla a primei apariţii a
-	 * unei anumite piese. (pion în cazul nostru white/black)
-	 * folosită atunci când se schimbă culorile şi engine-ul
-	 * îşi alege primul pion pentru a-l muta.
+	 * Implementare rocada.
 	 */
 
-	public Position positionPiece (int piece) {
+	public void makeQueenCastling(Moves move) {
 
-		Position pos = new Position(-1, -1);
-
-		for (int i = 0; i < ROWS; i++)
-			for (int j = 0; j < COLUMNS; j++)
-				if (table[i][j] == piece) {
-					pos = new Position(i, j);
-					return pos;
-				}
-
-		return pos;
-	} 
+		table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+		table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+		table[move.futureLine][move.futureColumn + 1] = table[move.currentLine][move.futureColumn - 2];
+		table[move.futureLine][move.futureColumn - 2] = Pieces.BLANK;
+	}
 }
-
