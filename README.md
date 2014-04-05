@@ -1,10 +1,10 @@
-==================================================================================
+================================================================================================
 		   	  Proiect PA - Şah 2013 - 2014
 
 Nume echipă: The Minions
 An: II
 Materie: Proiectarea Algoritmilor
-==================================================================================
+================================================================================================
 
 Etapa I:
 	Majoritatea metodelor implementate în cadrul acestei etape sunt
@@ -53,7 +53,7 @@ comanda Machine Black trece engine-ul pe negru şi este rândul engine-ului nici
 urmată imediat de comanda "white".
 	În urma acestor observaţii am implementat cele două comenzi.
 	
-==================================================================================
+========================================================================================================
 	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
 
 	Fișiere adiționale:
@@ -66,3 +66,30 @@ urmată imediat de comanda "white".
 				     permisiuni de execuție (chmod 777 *.class) pentru a putea fii încărcate de xboard
 			   - clean: executarea comenzii "make" cu argumetul "clean", are rolul de a șterge toate
 			   	    fișierele executabile (*.class), generate în urma compilării sursei.
+=========================================================================================================
+
+Etapa II
+		
+		**************************************************************************************************************************************** 
+		* (-colorState) table[line][column] < 0 - piesa este proprie engine-ului, explicaţie: 
+		* engine - negru => colorState = -1 => (- -1) * Valoare_Negativa = 1 * Valoare_Negativa = Valoare_Negativa < 0 => piesă proprie
+		* engine - alb => colorState = 1 => (-1) * Valoare_Pozitiva = Valoare_Negativa < 0 => piesă proprie
+		* Dacă rezultatul este > 0 atunci este o piesă a adversarului.
+		****************************************************************************************************************************************
+		Am ales o astfel de implementare pentru a nu scrie cod inutil care consta într-o singură modificare de inegalitate, astfel am înjumătăţit
+		dimensiunea codului.
+		****************************************************************************************************************************************
+		Bazându-ne în continuare pe faptul că schimbarea culorii enginelui se realizează pe baza acţionării comenzii Machine White/Black
+modificându-se astfel valoarea variabilei colorState corespunzător culorii enginelui, respectiv -1 pentru engine culoare neagră şi 1
+pentru engine culoare albă.
+		Metoda "check" verifică toate cazurile prin care regele s-ar putea afla în poziţie de şah:
+			check_up, check_down, check_left, check_right verifică poziţie cu poziţie sus, jos, la stânga şi respectiv dreapta oprindu-se
+fie în momentul în care întâlneşte în calea sa o piesă proprie, fie în momentul în care întâlneşte o piesă a adversarului, sau se
+opreşte când se "loveşte" de marginile tablei de joc. În cazul în care mai întâi pe aceea direcţie s-a aflat o piesă a adversarului
+atunci se verifică dacă este tură sau regină.
+			check_upLeft, check_upRight, check_downRight, check_downLeft verifică cele patru diagonale, gândirea fiind aceeaşi ca şi în cazul
+metodelor explicate anterior, diferenţele constând în: se verifică dacă piesa adversarului este regină sau nebun, singurele piese care
+acţionează pe diagonală, de asemenea în aceste cazuri şi pionul poate da şah, dar am ţinut cont de faptul că un pion trecut de poziţia
+regelui cu o linie nu îl pune în această situaţie, deoarece pionul nu se poate întoarce.
+			check_Horse verifică toate cele opt posibile poziţii ale unui cal care ar pune regele în şah.
+			check_King verifică dacă regele advers s-ar afla în imediata vecinătate a regelui engine-ului, mutarea fiind ilegală.

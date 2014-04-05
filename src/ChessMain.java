@@ -86,6 +86,10 @@ public class ChessMain {
 	public static ArrayList<Moves> allmoves = new ArrayList<Moves>();
 	public String[] king_side_castling = { "e1g1", "e8g8" };
 	public String[] queen_side_castling = { "e1c1", "e8c8" };
+	public boolean kingSideCastling = false;
+	public boolean queenSideCastling = false;
+	public boolean rook1NotMoved = true;
+	public boolean rook2NotMoved = true;
 
 	public static void main(String[] args) throws IOException {
 
@@ -102,6 +106,7 @@ public class ChessMain {
 		System.out.flush();
 
 		do {
+
 			if (chess.turn == Turn.ENGINE && chess.state == State.ACTIV) {
 				allmoves = new ArrayList<Moves>();
 				allmoves = chess.generateAllMoves();
@@ -111,15 +116,11 @@ public class ChessMain {
 					chess.turn = Turn.PLAYER;
 				}
 			}
-			/*
-			 * Dacă engine-ul nu mai are mutări valide posibile şi starea
-			 * jocului este activă atunci dăm resign apoi avem varianta new sau
-			 * quit.
-			 */
+
+			// TODO MODIFICA TERMINAREA JOCULUI CUM SCRIE PE FORUM
+
 			if (chess.turn == Turn.END && chess.state == State.ACTIV) {
 				chess.state = State.INACTIVE;
-				System.out.println("resign");
-				System.out.flush();
 				continue;
 			}
 
@@ -135,9 +136,7 @@ public class ChessMain {
 				chess.state = State.ACTIV;
 				continue;
 			}
-			/*
-			 * Sunt reiniţializate toate variabilele.
-			 */
+
 			if (command.startsWith("new")) {
 				chess.colorState = -1;
 				chess.turn = Turn.PLAYER;
@@ -169,17 +168,23 @@ public class ChessMain {
 					chess.colorChanged = true;
 				continue;
 			}
+
 			if (command.startsWith("force")) {
 				continue;
 			}
 			if (command.startsWith("go")) {
 				continue;
 			}
-			if (command.startsWith("quit"))
+			if (command.startsWith("quit")) {
 				return;
+			}
 
 		} while (true);
 	}
+
+	/*
+	 * Metoda (re)initializeaza tabla de joc.
+	 */
 
 	public void initTable() {
 
@@ -255,27 +260,29 @@ public class ChessMain {
 	public boolean movePlayer(String moveCommand) {
 
 		Moves move = decodeMove(moveCommand);
-
+		/*
+		 * Daca se termina in "q" atunci s-a realizat promovarea pionului din
+		 * partea adversarului.
+		 */
 		if (moveCommand.endsWith("q")) {
 			makeMove(move, 1);
 			return true;
 		}
-
+		// Se verifica daca adeversarul efectueaza o mutare speciala de tip
+		// rocada.
 		if (king_side_castling[0].equals(moveCommand)
 				|| king_side_castling[1].equals(moveCommand)) {
 			makeKingCastling(move);
 			return true;
 		}
-
 		if (queen_side_castling[0].equals(moveCommand)
 				|| queen_side_castling[1].equals(moveCommand)) {
 			makeQueenCastling(move);
 			return true;
 		}
-
+		// Mutarea nu are nimic "special".
 		makeMove(move, 0);
 		return true;
-
 	}
 
 	/*
@@ -308,8 +315,33 @@ public class ChessMain {
 						&& table[i][j] == Pieces.BLACK_KING * (-colorState))
 					allmoves.addAll(generateAllMovesKing(new Position(i, j)));
 			}
+		allmoves.addAll(generateCastlingMoves());
 
 		return allmoves;
+	}
+
+	/*
+	 * Metoda genereaza mutarile de rocada in cazul in care acestea ar fi
+	 * valide.
+	 */
+
+	public ArrayList<Moves> generateCastlingMoves() {
+
+		ArrayList<Moves> moves = new ArrayList<Moves>();
+
+		if (engineColor == Color.BLACK) {
+			if (rook1NotMoved && kingCastlingCondition())
+				moves.add(new Moves(7, 4, 7, 6));
+			if (rook2NotMoved && queenCastlingCondition())
+				moves.add(new Moves(7, 4, 7, 2));
+		} else {
+			if (rook1NotMoved && kingCastlingCondition())
+				moves.add(new Moves(0, 4, 0, 6));
+			if (rook2NotMoved && queenCastlingCondition())
+				moves.add(new Moves(0, 4, 0, 2));
+		}
+
+		return moves;
 	}
 
 	/*
@@ -378,69 +410,69 @@ public class ChessMain {
 	 * adversarului sau este libera.
 	 */
 
-	public ArrayList<Moves> generateAllMovesHorse(Position initialposition) {
+	public ArrayList<Moves> generateAllMovesHorse(Position initialPosition) {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
 
-		if (initialposition.line + 2 < ROWS
-				&& initialposition.column + 1 < COLUMNS)
+		if (initialPosition.line + 2 < ROWS
+				&& initialPosition.column + 1 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line + 2][initialposition.column + 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 2,
-						initialposition.column + 1));
+					* table[initialPosition.line + 2][initialPosition.column + 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 2,
+						initialPosition.column + 1));
 
-		if (initialposition.line + 2 < ROWS && initialposition.column - 1 >= 0)
+		if (initialPosition.line + 2 < ROWS && initialPosition.column - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line + 2][initialposition.column - 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 2,
-						initialposition.column - 1));
+					* table[initialPosition.line + 2][initialPosition.column - 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 2,
+						initialPosition.column - 1));
 
-		if (initialposition.line + 1 < ROWS
-				&& initialposition.column + 2 < COLUMNS)
+		if (initialPosition.line + 1 < ROWS
+				&& initialPosition.column + 2 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line + 1][initialposition.column + 2] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 1,
-						initialposition.column + 2));
+					* table[initialPosition.line + 1][initialPosition.column + 2] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 1,
+						initialPosition.column + 2));
 
-		if (initialposition.line + 1 < ROWS && initialposition.column - 2 >= 0)
+		if (initialPosition.line + 1 < ROWS && initialPosition.column - 2 >= 0)
 			if ((-colorState)
-					* table[initialposition.line + 1][initialposition.column - 2] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 1,
-						initialposition.column - 2));
+					* table[initialPosition.line + 1][initialPosition.column - 2] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 1,
+						initialPosition.column - 2));
 
-		if (initialposition.line - 2 >= 0
-				&& initialposition.column + 1 < COLUMNS)
+		if (initialPosition.line - 2 >= 0
+				&& initialPosition.column + 1 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line - 2][initialposition.column + 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 2,
-						initialposition.column + 1));
+					* table[initialPosition.line - 2][initialPosition.column + 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 2,
+						initialPosition.column + 1));
 
-		if (initialposition.line - 2 >= 0 && initialposition.column - 1 >= 0)
+		if (initialPosition.line - 2 >= 0 && initialPosition.column - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line - 2][initialposition.column - 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 2,
-						initialposition.column - 1));
+					* table[initialPosition.line - 2][initialPosition.column - 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 2,
+						initialPosition.column - 1));
 
-		if (initialposition.line - 1 >= 0
-				&& initialposition.column + 2 < COLUMNS)
+		if (initialPosition.line - 1 >= 0
+				&& initialPosition.column + 2 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line - 1][initialposition.column + 2] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 1,
-						initialposition.column + 2));
+					* table[initialPosition.line - 1][initialPosition.column + 2] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 1,
+						initialPosition.column + 2));
 
-		if (initialposition.line - 1 >= 0 && initialposition.column - 2 >= 0)
+		if (initialPosition.line - 1 >= 0 && initialPosition.column - 2 >= 0)
 			if ((-colorState)
-					* table[initialposition.line - 1][initialposition.column - 2] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 1,
-						initialposition.column - 2));
+					* table[initialPosition.line - 1][initialPosition.column - 2] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 1,
+						initialPosition.column - 2));
 
 		return moves;
 	}
@@ -449,73 +481,73 @@ public class ChessMain {
 	 * Metoda returneaza toate mutarile valide pentru nebun. (More in Readme)
 	 */
 
-	public ArrayList<Moves> generateAllMovesBishop(Position initialposition) {
+	public ArrayList<Moves> generateAllMovesBishop(Position initialPosition) {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
 		int line, column;
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line + 1) < ROWS && (column + 1) < COLUMNS) {
 			if (table[line + 1][column + 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column + 1));
 				line++;
 				column++;
 			} else if ((-colorState) * table[line + 1][column + 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column + 1));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line + 1) < ROWS && (column - 1) >= 0) {
 			if (table[line + 1][column - 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column - 1));
 				line++;
 				column--;
 			} else if ((-colorState) * table[line + 1][column - 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column - 1));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line - 1) >= 0 && (column + 1) < COLUMNS) {
 			if (table[line - 1][column + 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column + 1));
 				line--;
 				column++;
 			} else if ((-colorState) * table[line - 1][column + 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column + 1));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line - 1) >= 0 && (column - 1) >= 0) {
 			if (table[line - 1][column - 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column - 1));
 				line--;
 				column--;
 			} else if ((-colorState) * table[line - 1][column - 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column - 1));
 				break;
 			} else
 				break;
@@ -528,69 +560,69 @@ public class ChessMain {
 	 * Metoda returneaza toate mutarile valide pentru tura. (More in Readme)
 	 */
 
-	public ArrayList<Moves> generateAllMovesRook(Position initialposition) {
+	public ArrayList<Moves> generateAllMovesRook(Position initialPosition) {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
 		int line, column;
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line + 1) < ROWS) {
 			if (table[line + 1][column] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column));
 				line++;
 			} else if ((-colorState) * table[line + 1][column] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line + 1, column));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line + 1, column));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((line - 1) >= 0) {
 			if (table[line - 1][column] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column));
 				line--;
 			} else if ((-colorState) * table[line - 1][column] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line - 1, column));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line - 1, column));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((column + 1) < COLUMNS) {
 			if (table[line][column + 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line, column + 1));
 				column++;
 			} else if ((-colorState) * table[line][column + 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line, column + 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line, column + 1));
 				break;
 			} else
 				break;
 		}
 
-		line = initialposition.line;
-		column = initialposition.column;
+		line = initialPosition.line;
+		column = initialPosition.column;
 
 		while ((column - 1) >= 0) {
 			if (table[line][column - 1] == 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line, column - 1));
 				column--;
 			} else if ((-colorState) * table[line][column - 1] > 0) {
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, line, column - 1));
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, line, column - 1));
 				break;
 			} else
 				break;
@@ -604,12 +636,13 @@ public class ChessMain {
 	 * posibile pentru comportamentul asemanator unei ture cu cele posibile
 	 * pentru un comportament asemenator cu al unui nebun.
 	 */
-	public ArrayList<Moves> generateAllMovesQueen(Position initialposition) {
+
+	public ArrayList<Moves> generateAllMovesQueen(Position initialPosition) {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
 
-		moves.addAll(generateAllMovesBishop(initialposition));
-		moves.addAll(generateAllMovesRook(initialposition));
+		moves.addAll(generateAllMovesBishop(initialPosition));
+		moves.addAll(generateAllMovesRook(initialPosition));
 
 		return moves;
 	}
@@ -618,67 +651,68 @@ public class ChessMain {
 	 * Metoda genereaza toate mutarile valide pentru rege, avand maxim opt
 	 * mutari valide.
 	 */
-	public ArrayList<Moves> generateAllMovesKing(Position initialposition) {
+
+	public ArrayList<Moves> generateAllMovesKing(Position initialPosition) {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
 
-		if (initialposition.line + 1 < ROWS)
+		if (initialPosition.line + 1 < ROWS)
 			if ((-colorState)
-					* table[initialposition.line + 1][initialposition.column] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 1,
-						initialposition.column));
+					* table[initialPosition.line + 1][initialPosition.column] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 1,
+						initialPosition.column));
 
-		if (initialposition.line - 1 >= 0)
+		if (initialPosition.line - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line - 1][initialposition.column] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 1,
-						initialposition.column));
+					* table[initialPosition.line - 1][initialPosition.column] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 1,
+						initialPosition.column));
 
-		if (initialposition.column + 1 < COLUMNS)
+		if (initialPosition.column + 1 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line][initialposition.column + 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line,
-						initialposition.column + 1));
+					* table[initialPosition.line][initialPosition.column + 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line,
+						initialPosition.column + 1));
 
-		if (initialposition.column - 1 >= 0)
+		if (initialPosition.column - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line][initialposition.column - 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line,
-						initialposition.column - 1));
+					* table[initialPosition.line][initialPosition.column - 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line,
+						initialPosition.column - 1));
 
-		if (initialposition.line + 1 < ROWS
-				&& initialposition.column + 1 < COLUMNS)
+		if (initialPosition.line + 1 < ROWS
+				&& initialPosition.column + 1 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line + 1][initialposition.column + 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 1,
-						initialposition.column + 1));
+					* table[initialPosition.line + 1][initialPosition.column + 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 1,
+						initialPosition.column + 1));
 
-		if (initialposition.line - 1 >= 0
-				&& initialposition.column + 1 < COLUMNS)
+		if (initialPosition.line - 1 >= 0
+				&& initialPosition.column + 1 < COLUMNS)
 			if ((-colorState)
-					* table[initialposition.line - 1][initialposition.column + 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 1,
-						initialposition.column + 1));
+					* table[initialPosition.line - 1][initialPosition.column + 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 1,
+						initialPosition.column + 1));
 
-		if (initialposition.line + 1 < ROWS && initialposition.column - 1 >= 0)
+		if (initialPosition.line + 1 < ROWS && initialPosition.column - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line + 1][initialposition.column - 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line + 1,
-						initialposition.column - 1));
+					* table[initialPosition.line + 1][initialPosition.column - 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line + 1,
+						initialPosition.column - 1));
 
-		if (initialposition.line - 1 >= 0 && initialposition.column - 1 >= 0)
+		if (initialPosition.line - 1 >= 0 && initialPosition.column - 1 >= 0)
 			if ((-colorState)
-					* table[initialposition.line - 1][initialposition.column - 1] >= 0)
-				moves.add(new Moves(initialposition.line,
-						initialposition.column, initialposition.line - 1,
-						initialposition.column - 1));
+					* table[initialPosition.line - 1][initialPosition.column - 1] >= 0)
+				moves.add(new Moves(initialPosition.line,
+						initialPosition.column, initialPosition.line - 1,
+						initialPosition.column - 1));
 
 		return moves;
 	}
@@ -704,6 +738,7 @@ public class ChessMain {
 	 * in care se afla in aceasta situatie sau nu lasa regele in pozitie de sah
 	 * prin mutarea facuta. (More in Readme)
 	 */
+
 	public ArrayList<Moves> checkMoves() {
 
 		ArrayList<Moves> moves = new ArrayList<Moves>();
@@ -734,6 +769,21 @@ public class ChessMain {
 			return false;
 		Moves move = moves.get(new Random().nextInt(moves.size()));
 		StringBuffer moveEngine = encodeMove(move);
+		// Se verifica daca mutarea aleasa este o mutare de tip rocada.
+		if (king_side_castling[0].equals(moveEngine)
+				|| king_side_castling[1].equals(moveEngine)) {
+			makeKingCastling(move);
+			return true;
+		}
+		if (queen_side_castling[0].equals(moveEngine)
+				|| queen_side_castling[1].equals(moveEngine)) {
+			makeQueenCastling(move);
+			return true;
+		}
+		/*
+		 * Daca mutarea se face pe ultima linie atunci se are in vedere
+		 * verificarea daca piesa este sau nu un pion.
+		 */
 		if (move.futureLine == 0 || move.futureLine == 7)
 			makeMove(move, 1);
 		else
@@ -1045,7 +1095,7 @@ public class ChessMain {
 
 	/*
 	 * Metoda verifica daca regele este pus in sah de un cal, ce se poate afla
-	 * intr-un din cele opt pozitii posibile.
+	 * intr-una din cele opt pozitii posibile.
 	 */
 
 	public boolean check_Horse(int[][] table_copy, int kingLine, int kingColumn) {
@@ -1130,14 +1180,13 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metoda determina pozitia actuala a regelui pe tabla si apoi apeleaza
-	 * toate variantele posibile prin care acesta s-ar putea afla in pozitie de
-	 * sah, returnand true daca este in sah si false in caz contrar.
+	 * Metoda determina si returneaza pozitia regelui pe tabla primita.
 	 */
 
-	public boolean check(int[][] table_copy) {
+	public Position whereIsTheKing(int[][] table_copy) {
 
-		int kingLine, kingColumn, i = 0, j = 0, found = 0;
+		Position kingPosition;
+		int i = 0, j = 0, found = 0;
 
 		for (i = 0; i < ROWS; i++) {
 			for (j = 0; j < COLUMNS; j++)
@@ -1148,9 +1197,26 @@ public class ChessMain {
 			if (found == 1)
 				break;
 		}
+		kingPosition = new Position(i, j);
 
-		kingLine = i;
-		kingColumn = j;
+		return kingPosition;
+	}
+
+	/*
+	 * Metoda determina pozitia actuala a regelui pe tabla si apoi apeleaza
+	 * toate variantele posibile prin care acesta s-ar putea afla in pozitie de
+	 * sah, returnand true daca este in sah si false in caz contrar.
+	 */
+
+	public boolean check(int[][] table_copy) {
+
+		int kingLine, kingColumn;
+		Position kingPosition;
+
+		kingPosition = whereIsTheKing(table_copy);
+
+		kingLine = kingPosition.line;
+		kingColumn = kingPosition.column;
 
 		if (check_up(table_copy, kingLine, kingColumn))
 			return true;
@@ -1177,7 +1243,7 @@ public class ChessMain {
 	}
 
 	/*
-	 * Metodă ce realizeaza mutarea pe tablă (matrice), daca o piesa ajunge pe
+	 * Metodă ce realizeaza mutarea pe tablă (matrice)., daca o piesa ajunge pe
 	 * ultima linie din tabla atunci changePawn este egal cu 1, si atunci se
 	 * verifica daca acea piesa este PAWN, deoarece acesta se schimba in regina
 	 * odata ajuns pe ultima linie.
@@ -1185,6 +1251,46 @@ public class ChessMain {
 
 	public void makeMove(Moves move, int changePawn) {
 
+		/*
+		 * Se verifica daca regele sau turele sunt mutate pentru a "anunta"
+		 * faptul ca in viitor nu se mai poate efectua mutarea de rocada.
+		 */
+		if (table[move.currentLine][move.currentColumn] == Pieces.BLACK_KING
+				* (-colorState)) {
+			rook1NotMoved = false;
+			rook2NotMoved = false;
+		}
+		if (table[move.currentLine][move.currentColumn] == Pieces.BLACK_ROOK
+				* (-colorState)
+				&& move.currentColumn == 0)
+			rook1NotMoved = false;
+		if (table[move.currentLine][move.currentColumn] == Pieces.BLACK_ROOK
+				* (-colorState)
+				&& move.currentColumn == 7)
+			rook2NotMoved = false;
+		/*
+		 * Conditii pentru detectare si efectuare mutare en-passant din partea
+		 * adversarului.
+		 */
+		if (table[move.futureLine][move.futureColumn] == 0
+				&& table[move.currentLine][move.currentColumn] == 1
+				&& table[move.futureLine - 1][move.futureColumn] == -1) {
+			table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+			table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+			table[move.futureLine - 1][move.futureColumn] = Pieces.BLANK;
+		}
+		if (table[move.futureLine][move.futureColumn] == 0
+				&& table[move.currentLine][move.currentColumn] == -1
+				&& table[move.futureLine + 1][move.futureColumn] == 1) {
+			table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
+			table[move.currentLine][move.currentColumn] = Pieces.BLANK;
+			table[move.futureLine + 1][move.futureColumn] = Pieces.BLANK;
+		}
+		/*
+		 * daca o piesa ajunge pe ultima linie din tabla atunci changePawn este
+		 * egal cu 1, si atunci se verifica daca acea piesa este PAWN, deoarece
+		 * acesta se schimba in regina odata ajuns pe ultima linie.
+		 */
 		if (changePawn == 0) {
 			table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
 			table[move.currentLine][move.currentColumn] = Pieces.BLANK;
@@ -1200,7 +1306,7 @@ public class ChessMain {
 	}
 
 	/*
-	 * Implementare rocada.
+	 * Implementare aplicare rocada KingSideCastling pe tabla(matrice).
 	 */
 
 	public void makeKingCastling(Moves move) {
@@ -1212,7 +1318,7 @@ public class ChessMain {
 	}
 
 	/*
-	 * Implementare rocada.
+	 * Implementare aplicare rocada QueenSideCastling pe tabla(matrice).
 	 */
 
 	public void makeQueenCastling(Moves move) {
@@ -1221,5 +1327,72 @@ public class ChessMain {
 		table[move.currentLine][move.currentColumn] = Pieces.BLANK;
 		table[move.futureLine][move.futureColumn + 1] = table[move.currentLine][move.futureColumn - 2];
 		table[move.futureLine][move.futureColumn - 2] = Pieces.BLANK;
+	}
+
+	/*
+	 * Conditii pentru posibilitatea de a efectua rocada KingSideCastling.
+	 */
+
+	public boolean kingCastlingCondition() {
+
+		int linie;
+		int table_copy[][];
+
+		if (engineColor == Color.WHITE)
+			linie = 0;
+		else
+			linie = 7;
+		Position king = whereIsTheKing(table);
+		if (king.line != linie || king.column != 4)
+			return false;
+		if (table[king.line][king.column + 1] != 0
+				|| table[king.line][king.column + 2] != 0)
+			return false;
+		table_copy = tableCopy(table);
+		table_copy[king.line][king.column + 1] = table_copy[king.line][king.column];
+		table_copy[king.line][king.column] = Pieces.BLANK;
+		if (check(table_copy))
+			return false;
+		table_copy = tableCopy(table);
+		table_copy[king.line][king.column + 2] = table_copy[king.line][king.column];
+		table_copy[king.line][king.column] = Pieces.BLANK;
+		if (check(table_copy))
+			return false;
+
+		return true;
+	}
+
+	/*
+	 * Conditii pentru posibilitatea de a efectua rocada QueenSideCastling.
+	 */
+
+	public boolean queenCastlingCondition() {
+
+		int linie;
+		int table_copy[][];
+
+		if (engineColor == Color.WHITE)
+			linie = 0;
+		else
+			linie = 7;
+		Position king = whereIsTheKing(table);
+		if (king.line != linie || king.column != 4)
+			return false;
+		if (table[king.line][king.column - 1] != 0
+				|| table[king.line][king.column - 2] != 0
+				|| table[king.line][king.column - 3] != 0)
+			return false;
+		table_copy = tableCopy(table);
+		table_copy[king.line][king.column - 1] = table_copy[king.line][king.column];
+		table_copy[king.line][king.column] = Pieces.BLANK;
+		if (check(table_copy))
+			return false;
+		table_copy = tableCopy(table);
+		table_copy[king.line][king.column - 2] = table_copy[king.line][king.column];
+		table_copy[king.line][king.column] = Pieces.BLANK;
+		if (check(table_copy))
+			return false;
+
+		return true;
 	}
 }
