@@ -6,7 +6,8 @@ An: II
 Materie: Proiectarea Algoritmilor
 ================================================================================================
 
-Etapa I:
+Etapa I
+
 	Majoritatea metodelor implementate în cadrul acestei etape sunt
 scurte şi comentate suficient în cod. Vom încerca în Readme să explicăm
 metodele şi variabilele care pot reprezenta o sursă de ambiguitate:
@@ -53,26 +54,13 @@ comanda Machine Black trece engine-ul pe negru şi este rândul engine-ului nici
 urmată imediat de comanda "white".
 	În urma acestor observaţii am implementat cele două comenzi.
 	
-========================================================================================================
-	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
-
-	Fișiere adiționale:
-		- Makefile - pe lângă fișierul sursă cu extensia .java, am adăugat și un fișier Makefile care are
-			     implementate funcțiile: build, clean și default.
-			   - default: executarea comenzii "make" fără argumente, duce la executarea implicită a
-			   	       comenzii "build"
-			   - build: executarea comenzii "make" cu argumentul "build", are rolul de a compila sursa
-			  	     .java (javac ChessMain.java), generând fișierele executabile .class, și oferindu-le
-				     permisiuni de execuție (chmod 777 *.class) pentru a putea fii încărcate de xboard
-			   - clean: executarea comenzii "make" cu argumetul "clean", are rolul de a șterge toate
-			   	    fișierele executabile (*.class), generate în urma compilării sursei.
-=========================================================================================================
+======================================================================================================================
 
 Etapa II
 		
 		**************************************************************************************************************************************** 
 		* (-colorState) table[line][column] < 0 - piesa este proprie engine-ului, explicaţie: 
-		* engine - negru => colorState = -1 => (- -1) * Valoare_Negativa = 1 * Valoare_Negativa = Valoare_Negativa < 0 => piesă proprie
+		* engine - negru => colorState = -1 => (-(-1)) * Valoare_Negativa = 1 * Valoare_Negativa = Valoare_Negativa < 0 => piesă proprie
 		* engine - alb => colorState = 1 => (-1) * Valoare_Pozitiva = Valoare_Negativa < 0 => piesă proprie
 		* Dacă rezultatul este > 0 atunci este o piesă a adversarului.
 		****************************************************************************************************************************************
@@ -93,3 +81,20 @@ acţionează pe diagonală, de asemenea în aceste cazuri şi pionul poate da ş
 regelui cu o linie nu îl pune în această situaţie, deoarece pionul nu se poate întoarce.
 			check_Horse verifică toate cele opt posibile poziţii ale unui cal care ar pune regele în şah.
 			check_King verifică dacă regele advers s-ar afla în imediata vecinătate a regelui engine-ului, mutarea fiind ilegală.
+
+	
+========================================================================================================
+	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
+
+	Fișiere adiționale:
+		- Makefile - pe lângă fișierul sursă cu extensia .java, am adăugat și un fișier Makefile care are
+			     implementate funcțiile: build, clean și default.
+			   - default: executarea comenzii "make" fără argumente, duce la executarea implicită a
+			   	       comenzii "build"
+			   - build: executarea comenzii "make" cu argumentul "build", are rolul de a compila sursa
+			  	     .java (javac ChessMain.java), generând fișierele executabile .class, și oferindu-le
+				     permisiuni de execuție (chmod 777 *.class) pentru a putea fii încărcate de xboard
+			   - clean: executarea comenzii "make" cu argumetul "clean", are rolul de a șterge toate
+			   	    fișierele executabile (*.class), generate în urma compilării sursei.
+
+
