@@ -51,6 +51,14 @@ class Moves {
         this.futureColumn = futureColumn;
     }
     
+    public Moves(){
+    	this(0,0,0,0);
+    }
+    
+    public Moves clone(){
+    	return new Moves(currentLine, currentColumn, futureLine, futureColumn);
+    }
+    
     public String toString(){
         String s = new String();
         s = "(" + currentLine + " " + currentColumn + " " + futureLine + " " + futureColumn + ")";
@@ -99,6 +107,8 @@ public class ChessMain {
     public boolean rook2_moves = true;
     public static FileWriter file ;//= new FileWriter("game.txt");
     public static String finalcommand ;
+    public static int MAXDEPTH = 2;
+    public static int CHECKMATE = 100000;
     
     public static void main(String[] args) throws IOException {
 
@@ -116,8 +126,8 @@ public class ChessMain {
 
         do {
             if (chess.turn == Turn.ENGINE && chess.state == State.ACTIV) {
-                allmoves = chess.generateAllMoves();
-                System.out.println(allmoves);
+               // allmoves = chess.generateAllMoves();
+               // System.out.println(allmoves);
                 if (chess.moveEngine() == false) {
                     chess.turn = Turn.END;
                 } else {
@@ -708,8 +718,121 @@ public class ChessMain {
         }
         return moves;
     }
+    
+    public ArrayList<Moves> checkMoves(ArrayList<Moves> allmoves) {
 
+        ArrayList<Moves> moves = new ArrayList<Moves>();
+        int[][] table_copy;
+
+        for (Moves move : allmoves) {
+            table_copy = tableCopy(table);
+            table_copy[move.futureLine][move.futureColumn] = table_copy[move.currentLine][move.currentColumn];
+            table_copy[move.currentLine][move.currentColumn] = Pieces.BLANK;
+            if (!check(table_copy)) {
+                moves.add(move);
+            }
+        }
+        return moves;
+    }
+
+    
+    public int eval(int depth){
+    	int score = new Random().nextInt(100);
+    	
+    	
+    	return score;
+    }
+    
+    public Pair<Moves, Integer> negaMax(int[][] level_table, int depth) throws IOException{
+    	
+    	if(depth == MAXDEPTH)
+    		return new Pair<Moves, Integer>(null,eval(depth));
+    	
+    	
+    	int[][] table_copy = tableCopy(level_table);
+    	table = table_copy;
+    	ArrayList<Moves> playerMoves = generateAllMoves();
+    	playerMoves = checkMoves(playerMoves);
+    	Pair<Moves, Integer> score, max = new Pair<Moves, Integer>(null,  -CHECKMATE - 1);
+    	
+    	
+    	if(playerMoves.size() == 0){
+    		System.out.println("probleme size");
+    		return new Pair<Moves, Integer>(null, (depth%2 == 0)?(-CHECKMATE):(CHECKMATE));
+    	
+    	}
+    	colorState *= -1;
+    	for(Moves move:playerMoves){
+    		
+    		StringBuffer moveEngine = encodeMove(move);         
+            if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)){
+                makeMoveCastling(move);  
+            } else if (wild_castling[0].equals(moveEngine) || wild_castling[1].equals(moveEngine)){
+                makeMoveCastlingWild(move);
+            } else if (move.futureLine == 0 || move.futureLine == 7) {
+                makeMove(move, 1);
+            } else {
+                makeMove(move, 0);
+            }
+            
+            score = negaMax(table, depth + 1);
+            
+            if( -score.second > max.second){
+            	max.second = -score.second;
+            	System.out.println("un socor "+ depth +" "+ max.second);
+            	max.first = move.clone();
+            }
+            
+            
+            table_copy = tableCopy(level_table);
+        	table = table_copy;
+    	}
+    	
+    	colorState *= -1;
+    	return max;
+    }
+    
     public boolean moveEngine() throws IOException{
+    	Pair<Moves, Integer> move = negaMax(tableCopy(table), 0);
+    	if(move.first == null){
+    		if(Math.abs(move.second) == CHECKMATE){
+    			if(colorState == -1)
+                    finalcommand = "1-0 {White mates}";
+                else if (colorState == 1 && check(table))    
+                    finalcommand = "0-1 {Black mates}";
+    			return false;
+    		} else {
+    			if(colorState == -1)
+                    finalcommand = "1/2-1/2 {Stalemate}";
+                else if (colorState == 1 && !check(table))   
+                    finalcommand = "1/2-1/2 {Stalemate}";       
+                return false;
+    		}
+    	}
+    	
+    	StringBuffer moveEngine = encodeMove(move.first);
+    	 System.out.println(moveEngine);
+         System.out.flush();
+    	if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)){
+            makeMoveCastling(move.first);  
+            return true;
+        }
+            
+        if (wild_castling[0].equals(moveEngine) || wild_castling[1].equals(moveEngine)){
+            makeMoveCastlingWild(move.first);
+            return true;
+        }
+        
+        if (move.first.futureLine == 0 || move.first.futureLine == 7) {
+            makeMove(move.first, 1);
+        } else {
+            makeMove(move.first, 0);
+        }
+       
+        return true;
+    }
+    
+  /*  public boolean moveEngine() throws IOException{
         
         //allmoves = generateAllMoves();
         allmoves = checkMoves();
@@ -778,7 +901,7 @@ public class ChessMain {
         //Revenim la culoarea Engine-ului nostru
         colorState = 0 - colorState;
         return true;
-    }
+    }*/
 
     public boolean check_up(int[][] table_copy, int kingLine, int kingColumn) {
 
@@ -1541,3 +1664,15 @@ public class ChessMain {
         }
     }
 }
+
+class Pair<F, S>{
+	public F first;
+	public S second;
+	public Pair(F first, S second){
+		this.first = first;
+		this.second = second;
+	}
+}
+
+
+
