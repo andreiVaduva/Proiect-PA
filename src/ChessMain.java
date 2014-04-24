@@ -165,7 +165,7 @@ public class ChessMain {
                 chess.colorState = -1;
                 chess.turn = Turn.PLAYER;
                 //chess.engineColor = Color.BLACK;
-                chess.engineColor = Color.BLACK;
+                //chess.engineColor = Color.BLACK;
                 chess.state = State.ACTIV;
                 chess.initTable();
                 try{
@@ -185,7 +185,7 @@ public class ChessMain {
             if (command.startsWith("white") && chess.state == State.ACTIV) {
                 if (chess.colorChanged == true) {
                     chess.turn = Turn.ENGINE;
-                    chess.engineColor = Color.WHITE;
+                    //chess.engineColor = Color.WHITE;
                     chess.colorState = 1;
                     chess.colorChanged = false;
                 } else {
@@ -197,7 +197,7 @@ public class ChessMain {
             if (command.startsWith("black") && chess.state == State.ACTIV) {
                 if (chess.colorChanged == true) {
                     chess.turn = Turn.ENGINE;
-                    chess.engineColor = Color.BLACK;
+                    //chess.engineColor = Color.BLACK;
                     chess.colorState = -1;
                     chess.colorChanged = false;
                 } else {
@@ -674,14 +674,14 @@ public class ChessMain {
     
     public ArrayList<Moves> generateCastlingMoves(){
         ArrayList<Moves> moves = new ArrayList<Moves>();
-        if(engineColor == Color.BLACK){
+        if(colorState == 1){
             if(rook2_moves && kingCastlingCondition())
                 moves.add(new Moves(7,4,7,6));
             if(rook1_moves && queenCastlingCondition())
                 moves.add(new Moves(7,4,7,2));
         }
         
-        if(engineColor == Color.WHITE){
+        if(colorState == -1){
             if(rook2_moves && kingCastlingCondition())
                 moves.add(new Moves(0,4,0,6));
             if(rook1_moves && queenCastlingCondition())
@@ -737,8 +737,27 @@ public class ChessMain {
 
     
     public int eval(int depth){
-    	int score = new Random().nextInt(100);
+    	int score = 0;
     	
+    	for(int i = 0; i < 8; i++){
+    		for(int j = 0; j < 8; j++){
+    			switch(colorState *table[i][j]){
+    			case Pieces.WHITE_PAWN:
+    				score += 100; break;
+    			case Pieces.WHITE_BISHOP: 
+    			case Pieces.WHITE_HORSE:
+    				score += 300; break;
+    			case Pieces.WHITE_ROOK:
+    				score += 500; break;
+    			case Pieces.WHITE_QUEEN:
+    				score += 900; break;
+    				
+    			}
+    		}
+    	}
+    	
+    	if(depth %2 != 0)
+    		depth *= -1;
     	
     	return score;
     }
@@ -766,9 +785,13 @@ public class ChessMain {
     		
     		StringBuffer moveEngine = encodeMove(move);         
             if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)){
+            	colorState *= -1;
                 makeMoveCastling(move);  
+                colorState *= -1;
             } else if (wild_castling[0].equals(moveEngine) || wild_castling[1].equals(moveEngine)){
-                makeMoveCastlingWild(move);
+            	colorState *= -1;
+            	makeMoveCastlingWild(move);
+            	colorState *= -1;
             } else if (move.futureLine == 0 || move.futureLine == 7) {
                 makeMove(move, 1);
             } else {
@@ -1332,34 +1355,34 @@ public class ChessMain {
      */
     public boolean makeMove(Moves move, int changePawn) throws IOException {
         
-        if(engineColor == Color.BLACK){
+      //  if(engineColor == Color.BLACK){
             if(table[move.currentLine][move.currentColumn] == -6){
                 rook1_moves = false;
                 rook2_moves = false;
-            }
+            } else
             
             if(table[move.currentLine][move.currentColumn] == -4 && move.currentColumn == 0){
                 rook1_moves = false;
-            }
+            } else
             
             if(table[move.currentLine][move.currentColumn] == -4 && move.currentColumn == 7){
                 rook2_moves = false;
-            }
-        }
-        if(engineColor == Color.WHITE){
+            } else
+      //  }
+      //  if(engineColor == Color.WHITE){
             if(table[move.currentLine][move.currentColumn] == 6){
                 rook1_moves = false;
                 rook2_moves = false;
-            }
+            } else
             
             if(table[move.currentLine][move.currentColumn] == 4 && move.currentColumn == 0){
                 rook1_moves = false;
-            }
+            } else
             
             if(table[move.currentLine][move.currentColumn] == 4 && move.currentColumn == 7){
                 rook2_moves = false;
             }
-        }  
+   //     }  
         if(table[move.futureLine][move.futureColumn] == 0 && table[move.currentLine][move.currentColumn] == 1
                 && table[move.futureLine - 1][move.futureColumn] == -1){
                 table[move.futureLine][move.futureColumn] = table[move.currentLine][move.currentColumn];
@@ -1468,7 +1491,7 @@ public class ChessMain {
             
             for(int i=0;i<8;i++)
                 for(int j=0;j<8;j++)
-                    if(table[i][j] == 6){
+                    if(table[i][j] == -6){
                         king = new Position(i, j);
                         break;
                     }
