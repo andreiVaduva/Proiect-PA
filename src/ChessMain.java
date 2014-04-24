@@ -1,6 +1,6 @@
 import java.io.*;
 import java.util.ArrayList;
-import java.util.Random;
+//import java.util.Random;
 
 enum State {
 
@@ -90,7 +90,7 @@ public class ChessMain {
      * Starea iniţială a jocului este inactivă, engine-ul are culoarea implicită
      * negru şi primul la rând pentru a muta este jucătorul.
      */
-    public Color engineColor = Color.BLACK;
+//    public Color engineColor = Color.BLACK;
     public Turn turn = Turn.PLAYER;
     public static final int COLUMNS = 8;
     public static final int ROWS = 8;
@@ -105,6 +105,8 @@ public class ChessMain {
     public boolean queen_side_castling = false;
     public boolean rook1_moves = true;
     public boolean rook2_moves = true;
+    public boolean rook3_moves = true;
+    public boolean rook4_moves = true;
     public static FileWriter file ;//= new FileWriter("game.txt");
     public static String finalcommand ;
     public static int MAXDEPTH = 2;
@@ -674,14 +676,14 @@ public class ChessMain {
     
     public ArrayList<Moves> generateCastlingMoves(){
         ArrayList<Moves> moves = new ArrayList<Moves>();
-        if(colorState == 1){
-            if(rook2_moves && kingCastlingCondition())
+        if(colorState == -1){
+            if(rook4_moves && kingCastlingCondition())
                 moves.add(new Moves(7,4,7,6));
-            if(rook1_moves && queenCastlingCondition())
+            if(rook3_moves && queenCastlingCondition())
                 moves.add(new Moves(7,4,7,2));
         }
         
-        if(colorState == -1){
+        if(colorState == 1){
             if(rook2_moves && kingCastlingCondition())
                 moves.add(new Moves(0,4,0,6));
             if(rook1_moves && queenCastlingCondition())
@@ -773,14 +775,20 @@ public class ChessMain {
     	ArrayList<Moves> playerMoves = generateAllMoves();
     	playerMoves = checkMoves(playerMoves);
     	Pair<Moves, Integer> score, max = new Pair<Moves, Integer>(null,  -CHECKMATE - 1);
-    	
+    	ArrayList<Boolean> rooks_moves = new ArrayList<Boolean>(4);
     	
     	if(playerMoves.size() == 0){
     		System.out.println("probleme size");
     		return new Pair<Moves, Integer>(null, (depth%2 == 0)?(-CHECKMATE):(CHECKMATE));
     	
     	}
+    	
     	colorState *= -1;
+    	rooks_moves.add(rook1_moves);
+    	rooks_moves.add(rook2_moves);
+    	rooks_moves.add(rook3_moves);
+    	rooks_moves.add(rook4_moves);
+    	
     	for(Moves move:playerMoves){
     		
     		StringBuffer moveEngine = encodeMove(move);         
@@ -799,6 +807,11 @@ public class ChessMain {
             }
             
             score = negaMax(table, depth + 1);
+            
+            rook1_moves = rooks_moves.get(0);
+            rook2_moves = rooks_moves.get(1);
+            rook3_moves = rooks_moves.get(2);
+            rook4_moves = rooks_moves.get(3);
             
             if( -score.second > max.second){
             	max.second = -score.second;
@@ -1357,16 +1370,16 @@ public class ChessMain {
         
       //  if(engineColor == Color.BLACK){
             if(table[move.currentLine][move.currentColumn] == -6){
-                rook1_moves = false;
-                rook2_moves = false;
+                rook3_moves = false;
+                rook4_moves = false;
             } else
             
             if(table[move.currentLine][move.currentColumn] == -4 && move.currentColumn == 0){
-                rook1_moves = false;
+                rook3_moves = false;
             } else
             
             if(table[move.currentLine][move.currentColumn] == -4 && move.currentColumn == 7){
-                rook2_moves = false;
+                rook4_moves = false;
             } else
       //  }
       //  if(engineColor == Color.WHITE){
@@ -1446,7 +1459,7 @@ public class ChessMain {
     }
     
     public boolean kingCastlingCondition(){
-        if(engineColor == Color.WHITE){
+        if(colorState == 1){
             Position king = new Position(0, 0);
             int table_copy [][];
             
@@ -1524,7 +1537,7 @@ public class ChessMain {
     }
     
     public boolean queenCastlingCondition(){
-        if(engineColor == Color.WHITE){
+        if(colorState == 1){
             Position king = new Position(0, 0);
             int table_copy [][];
             
@@ -1568,7 +1581,7 @@ public class ChessMain {
             
             for(int i=0;i<8;i++)
                 for(int j=0;j<8;j++)
-                    if(table[i][j] == 6){
+                    if(table[i][j] == -6){
                         king = new Position(i, j);
                         break;
                     }
