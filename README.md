@@ -82,7 +82,43 @@ regelui cu o linie nu îl pune în această situaţie, deoarece pionul nu se poa
 			check_Horse verifică toate cele opt posibile poziţii ale unui cal care ar pune regele în şah.
 			check_King verifică dacă regele advers s-ar afla în imediata vecinătate a regelui engine-ului, mutarea fiind ilegală.
 
+=======================================================================================================================
+
+Etapa III
+
+	În aceasta etapa am implementat un algoritm Negamax bazat pe greutăți (valori diferite) acordate pieselor și pe
+bonusuri de poziție (puncte/valori suplimentare acordate în funcție de poziție). Astfel, la începutul fișierului
+ChessMain.java, in clasa ChessMain, am predefinit câte o matrice cu bonusuri de poziție pentru fiecare piesă.
 	
+	Greutăți inițiale atribuite fiecărei piese:
+	      
+	      PIESĂ     greutate (puncte)  |   TABELĂ bonusuri de poziție asociată piesei
+	    ------------------------------------------------------------------------------
+	    * PION   ->   150 puncte	   |   PawnTableWhite		PawnTableBlack
+	    * CAL    ->   320 puncte	   |   KnightTableWhite		KnightTableBlack
+	    * NEBUN  ->   330 puncte	   |   BishopTableWhite		BishopTableBlack
+	    * TURN   ->   500 puncte	   |   RookTableWhite		RookTableBlack
+	    * REGINA ->   900 puncte	   |   QueenTableWhite		QueenTableBlack
+	    * REGE   -> 20000 puncte	   |   KingTableMiddleWhite	KingTableMiddleBlack
+
+	    
+	Intrând puțin în detalii de implementare, noutatea adusă engenului în această etapă o reprezintă funcția
+negaMax, care se folosește de o funcție auxiliară eval. În ciuda faptului că funcția negaMax este funcția principală în 
+implementarea algoritmului Negamax, atracția centrală este reprezentată de funcția auxiliară eval, care calculează
+ponderea pieselor la fiecare mutare adunând bonusurile aferente în funcție de poziția actuală și poziția viitoare.
+
+
+OBS.: Adâncimea maximă a arborelui creat prin recursivitate este ținută în variabila MAXDEPTH care are valoarea 3.
+----- Întrucât adâncimea este una relativ mică, motorul nu reușește să vadă în avans decât două mutări proprii și o
+mutare a adversarului. Am ales această valoare deoarece orice altă valoare a adâncimii mai mare de 3 duce la o creștere
+exponențială a timpului de calculare a mutărilor, astfel durata unui joc de șah depășind cu mult timpul acordat
+unei partide.
+
+
+CONCLUZII: Pentru etapa următoare avem în vedere creșterea adâncimii maxime a arborelui în jurul valorii de 5-6 prin
+---------- folosirea unui algoritm Alpha-Beta Pruning, pentru reducerea numarului de ramuri ale arborelui. Astfel,
+ne dorim să reușim să scădem timpul necesar unei mutări (pe MAXDEPTH = 5) de la 3 min/mutare la 5-10 sec/mutare.
+
 ========================================================================================================
 	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
 
