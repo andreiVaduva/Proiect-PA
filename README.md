@@ -111,7 +111,7 @@ ponderea pieselor la fiecare mutare adunând bonusurile aferente în funcție de
 OBS.: Adâncimea maximă a arborelui creat prin recursivitate este ținută în variabila MAXDEPTH care are valoarea 3.
 Întrucât adâncimea este una relativ mică, motorul nu reușește să vadă în avans decât două mutări proprii și o
 mutare a adversarului. Am ales această valoare deoarece orice altă valoare a adâncimii mai mare de 3 duce la o creștere
-exponențială a timpului de calculare a mutărilor, astfel durata unui joc de șah depășind cu mult timpul acordat
+exponențială a timpului de calculare a mutărilor, astfel durata unui joc de șah depășind cu mult timpul alocat
 unei partide.
 
 
