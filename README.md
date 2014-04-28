@@ -109,15 +109,15 @@ ponderea pieselor la fiecare mutare adunând bonusurile aferente în funcție de
 
 
 OBS.: Adâncimea maximă a arborelui creat prin recursivitate este ținută în variabila MAXDEPTH care are valoarea 3.
------ Întrucât adâncimea este una relativ mică, motorul nu reușește să vadă în avans decât două mutări proprii și o
+Întrucât adâncimea este una relativ mică, motorul nu reușește să vadă în avans decât două mutări proprii și o
 mutare a adversarului. Am ales această valoare deoarece orice altă valoare a adâncimii mai mare de 3 duce la o creștere
 exponențială a timpului de calculare a mutărilor, astfel durata unui joc de șah depășind cu mult timpul acordat
 unei partide.
 
 
 CONCLUZII: Pentru etapa următoare avem în vedere creșterea adâncimii maxime a arborelui în jurul valorii de 5-6 prin
----------- folosirea unui algoritm Alpha-Beta Pruning, pentru reducerea numarului de ramuri ale arborelui. Astfel,
-ne dorim să reușim să scădem timpul necesar unei mutări (pe MAXDEPTH = 5) de la 3 min/mutare la 5-10 sec/mutare.
+folosirea unui algoritm Alpha-Beta Pruning, pentru reducerea numarului de ramuri ale arborelui. Astfel, ne dorim să
+reușim să scădem timpul necesar unei mutări (pe MAXDEPTH = 5) de la 3 min/mutare la 5-10 sec/mutare.
 
 ========================================================================================================
 	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
