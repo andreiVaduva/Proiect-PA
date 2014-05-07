@@ -99,8 +99,8 @@ public class ChessMain {
     public int colorState = -1;
     public boolean colorChanged = false;
     public static ArrayList<Moves> allmoves = new ArrayList<Moves>();
-    public static String castling[] = {"e1g1", "e8g8"};
-    public static String wild_castling[] = {"e1c1", "e8c8"};
+    public static String castling[] = {"move e1g1" , "move e8g8"};
+    public static String wild_castling[] = {"move e1c1","move e8c8"};
     public boolean rook1_moves = true;
     public boolean rook2_moves = true;
     public boolean rook3_moves = true;
@@ -200,7 +200,7 @@ public class ChessMain {
         {0, 0, 0, 0, 0, 0, 0, 0}
     };
 
-    private static int[][] QueenTableBlack = new int[][]{
+    private static int[][] QuuenTableBlack = new int[][]{
         {-20, -10, -10, -5, -5, -10, -10, -20},
         {-10, 0, 0, 0, 0, 0, 0, -10},
         {-10, 0, 5, 5, 5, 5, 0, -10},
@@ -211,7 +211,7 @@ public class ChessMain {
         {-20, -10, -10, -5, -5, -10, -10, -20}
     };
 
-    private static int[][] QueenTableWhite = new int[][]{
+    private static int[][] QuuenTableWhite = new int[][]{
         {-20, -10, -10, -5, -5, -10, -10, -20},
         {-10, 0, 5, 0, 0, 0, 0, -10},
         {-10, 5, 5, 5, 5, 5, 0, -10},
@@ -414,16 +414,18 @@ public class ChessMain {
      * Metoda pentru a codifica o mutare a engine-ului pentru a transmite-o
      * xbordului, returneaza StringBufferul de forma a2a3 etc. .
      */
-    public StringBuffer encodeMove(Moves move) {
+     public static String encodeMove(Moves move) {
 
-        StringBuffer moveEngine = new StringBuffer(20);
-
-        moveEngine.append("move ");
-        moveEngine.append((char) ('a' + move.currentColumn));
-        moveEngine.append((char) ('1' + move.currentLine));
-        moveEngine.append((char) ('a' + move.futureColumn));
-        moveEngine.append((char) ('1' + move.futureLine));
-
+        String moveEngine = "";
+        moveEngine +="move ";
+        char move1[] = new char[4];
+        move1[0] = (char)('a' + move.currentColumn);
+        move1[1] = (char) ('1' + move.currentLine);
+        move1[2] = (char) ('a' + move.futureColumn);
+        move1[3] = (char) ('1' + move.futureLine);       
+        String abc = new String(move1);
+        System.out.println(abc);
+        moveEngine += abc;
         return moveEngine;
     }
 
@@ -433,7 +435,6 @@ public class ChessMain {
     public boolean movePlayer(String moveCommand) throws IOException {
 
         Moves move = decodeMove(moveCommand);
-
         if (moveCommand.endsWith("q")) {
             if (makeMove(move, 1, table)) {
                 return true;
@@ -442,12 +443,14 @@ public class ChessMain {
             }
         }
 
-        if (castling[0].equals(moveCommand) || castling[1].equals(moveCommand)) {
+        if (castling[0].toString().contains(moveCommand) 
+                || castling[1].toString().contains(moveCommand)) {
             makeMoveCastling(move, table);
             return true;
         }
 
-        if (wild_castling[0].equals(moveCommand) || wild_castling[1].equals(moveCommand)) {
+        if (wild_castling[0].toString().contains(moveCommand) 
+                || wild_castling[1].toString().contains(moveCommand)) {
             makeMoveCastlingWild(move, table);
             return true;
         }
@@ -1102,10 +1105,10 @@ public class ChessMain {
                 }
 
                 if (tabela[i][j] == 5) {
-                    score += (900 + QueenTableWhite[i][j]);
+                    score += (900 + QuuenTableWhite[i][j]);
                 }
                 if (tabela[i][j] == -5) {
-                    score += (-900 - QueenTableBlack[i][j]);
+                    score += (-900 - QuuenTableBlack[i][j]);
                 }
 
                 if (tabela[i][j] == 6) {
@@ -1144,11 +1147,10 @@ public class ChessMain {
         }
 
         int mobilityscore = (white_size - black_size) * colorState * 5;
-
         return score * colorState + mobilityscore;
     }
 
-    public Pair<Moves, Integer> negaMax(int[][] level_table, int depth)
+    public Pair<Moves, Integer> negaMax(int[][] level_table, int depth, int alfa, int beta)
             throws IOException {
 
         ArrayList<Moves> playerMoves = new ArrayList<Moves>();
@@ -1172,13 +1174,11 @@ public class ChessMain {
         for (Moves move : playerMoves) {
 
             int[][] table_copy = tableCopy(level_table);
-            StringBuffer moveEngine = encodeMove(move);
-            if (castling[0].equals(moveEngine)
-                    || castling[1].equals(moveEngine)) {
-                makeMoveCastling(move, table_copy);
-
-            } else if (wild_castling[0].equals(moveEngine)
-                    || wild_castling[1].equals(moveEngine)) {
+            String moveEngine = encodeMove(move);
+            
+            if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)){
+                makeMoveCastling(move, table_copy);   
+            } else if (wild_castling[0].equals(moveEngine) || wild_castling[1].equals(moveEngine)){
                 makeMoveCastlingWild(move, table_copy);
             } else if (move.futureLine == 0 || move.futureLine == 7) {
                 makeMove(move, 1, table_copy);
@@ -1186,7 +1186,7 @@ public class ChessMain {
                 makeMove(move, 0, table_copy);
             }
             colorState *= -1;
-            score = negaMax(table_copy, depth - 1);
+            score = negaMax(table_copy, depth - 1, -beta, -alfa);
             colorState *= -1;
 
             rook1_moves = rooks_moves.get(0);
@@ -1195,12 +1195,30 @@ public class ChessMain {
             rook4_moves = rooks_moves.get(3);
 
             score.second = 0 - score.second;
+               
+            //Negamax
+            //if (score.second > max.second) {
+            //    max.second = score.second;
+            //    max.first = move;
+            //}
+            
+            
+            //Alfa-Beta
+            
+             if (score.second >= beta) {
+             return new Pair<Moves, Integer>(move, beta);
+             }
 
-            if (score.second > max.second) {
-                max.second = score.second;
-                max.first = move;
+             if (score.second > max.second) {
+             max.second = score.second;
+             max.first = move;
+
+             if (score.second > alfa) {
+             alfa = score.second;
+             mutare = move;
+                }
+             }
             }
-        }
         return max;
     }
 
@@ -1249,18 +1267,18 @@ public class ChessMain {
             finalcommand = "1/2-1/2 {Draw}";
         }
 
-        Pair<Moves, Integer> move = negaMax(table, 3);
-        StringBuffer moveEngine = encodeMove(move.first);
+        Pair<Moves, Integer> move = negaMax(table, 4,Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);;
+        String moveEngine = encodeMove(move.first);
         System.out.println(moveEngine);
         System.out.flush();
 
+        
         if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)) {
             makeMoveCastling(move.first, table);
             return true;
         }
 
-        if (wild_castling[0].equals(moveEngine)
-                || wild_castling[1].equals(moveEngine)) {
+        if (wild_castling[0].equals(moveEngine) || wild_castling[1].equals(moveEngine)) {
             makeMoveCastlingWild(move.first, table);
             return true;
         }
@@ -1866,8 +1884,8 @@ public class ChessMain {
 
         tabela[move.futureLine][move.futureColumn] = tabela[move.currentLine][move.currentColumn];
         tabela[move.currentLine][move.currentColumn] = Pieces.BLANK;
-        tabela[move.futureLine][move.futureColumn - 1] = tabela[move.futureLine][move.futureColumn + 1];
-        tabela[move.futureLine][move.futureColumn + 1] = Pieces.BLANK;
+        tabela[move.currentLine][move.currentColumn + 1] = tabela[move.futureLine][move.currentColumn + 3];
+        tabela[move.futureLine][move.currentColumn + 3] = Pieces.BLANK;
 
         return true;
     }
