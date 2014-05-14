@@ -119,6 +119,21 @@ CONCLUZII: Pentru etapa următoare avem în vedere creșterea adâncimii maxime 
 folosirea unui algoritm Alpha-Beta Pruning, pentru reducerea numarului de ramuri ale arborelui. Astfel, ne dorim să
 reușim să scădem timpul necesar unei mutări (pe MAXDEPTH = 5) de la 3 min/mutare la 5-10 sec/mutare.
 
+=====================================================================================================================
+
+Etapa IV + V
+
+	În această etapă am adus o îmbunătățire algoritmului de Negamax bazat pe greutăți (valori diferite
+acordate pieselor), transformandu-l într-un algoritm Alpha-Beta Pruning prin sortarea mutărilor (mutarile
+cu posibilitati ofensife - care iau piese - fiind analizate primele).
+
+OBS.: MAXDEPTH = 4 (adancimea arborelui de mutari creat prin recursivitate)
+      mobilityscore = 5 (variabilă care stabileste agresivitatea engenului, valoarea de 5 determinand 
+      			 un joc ponderat din partea engenului nostru)
+      			 
+CONCLUZII: Metoda negamax (de la etapa trecuta) a fost schimbată în cod sub numele de pruning, fiindu-i
+aduse îmbunătățirile menționate mai sus.
+
 ========================================================================================================
 	MOD DE RULARE ȘI FIȘIERE ADIȚIONALE:
 
@@ -133,4 +148,7 @@ reușim să scădem timpul necesar unei mutări (pe MAXDEPTH = 5) de la 3 min/mu
 			   - clean: executarea comenzii "make" cu argumetul "clean", are rolul de a șterge toate
 			   	    fișierele executabile (*.class), generate în urma compilării sursei.
 
+
+    -> OBS.: IDE-urile folosite pentru developing au fost: Eclipse si NetBeans, proiectul fiind 
+       ----  testat de noi, atat pe Linux (Mint) cat si pe Windows (7).
 
