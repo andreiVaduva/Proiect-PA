@@ -1,5 +1,7 @@
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 enum State {
 
@@ -40,22 +42,24 @@ class Moves {
     public int currentColumn;
     public int futureLine;
     public int futureColumn;
+    public int order;
 
     public Moves(int currentLine, int currentColumn, int futureLine,
-            int futureColumn) {
+            int futureColumn,int order) {
 
         this.currentLine = currentLine;
         this.currentColumn = currentColumn;
         this.futureLine = futureLine;
         this.futureColumn = futureColumn;
+        this.order = order;
     }
 
     public Moves() {
-        this(0, 0, 0, 0);
+        this(0, 0, 0, 0 ,0);
     }
 
     public Moves clone() {
-        return new Moves(currentLine, currentColumn, futureLine, futureColumn);
+        return new Moves(currentLine, currentColumn, futureLine, futureColumn, order);
     }
 
     public String toString() {
@@ -106,8 +110,10 @@ public class ChessMain {
     public boolean rook3_moves = true;
     public boolean rook4_moves = true;
     public static String finalcommand;
-    public static int MAXDEPTH = 3;
-    public static int CHECKMATE = 100000;
+    public static int MAXDEPTH = 4;
+    public static int movesNumber = 0;
+    public static String movesHistory = "";
+    public static String movesHistory2 = ""; 
 
     /*
      * Bonus pentru piese in functie de pozitia ocupata.
@@ -405,7 +411,7 @@ public class ChessMain {
         futureLine = moveCommand.charAt(3) - '1';
 
         Moves move = new Moves(currentLine, currentColumn, futureLine,
-                futureColumn);
+                futureColumn , 0);
 
         return move;
     }
@@ -424,7 +430,6 @@ public class ChessMain {
         move1[2] = (char) ('a' + move.futureColumn);
         move1[3] = (char) ('1' + move.futureLine);       
         String abc = new String(move1);
-        System.out.println(abc);
         moveEngine += abc;
         return moveEngine;
     }
@@ -435,6 +440,8 @@ public class ChessMain {
     public boolean movePlayer(String moveCommand) throws IOException {
 
         Moves move = decodeMove(moveCommand);
+        movesNumber ++ ;
+        movesHistory += moveCommand + " ";
         if (moveCommand.endsWith("q")) {
             if (makeMove(move, 1, table)) {
                 return true;
@@ -518,7 +525,7 @@ public class ChessMain {
             if (tabela[initialposition.line + colorState][initialposition.column] == 0) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line
-                        + colorState, initialposition.column));
+                        + colorState, initialposition.column,0));
             }
         }
 
@@ -533,7 +540,7 @@ public class ChessMain {
                     * tabela[initialposition.line + colorState][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line
-                        + colorState, initialposition.column - 1));
+                        + colorState, initialposition.column - 1,1));
             }
         }
 
@@ -548,7 +555,7 @@ public class ChessMain {
                     * tabela[initialposition.line + colorState][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line
-                        + colorState, initialposition.column + 1));
+                        + colorState, initialposition.column + 1,1));
             }
         }
 
@@ -559,7 +566,7 @@ public class ChessMain {
                         moves.add(new Moves(initialposition.line,
                                 initialposition.column,
                                 initialposition.line + 2,
-                                initialposition.column));
+                                initialposition.column,0));
                     }
                 }
             }
@@ -572,7 +579,7 @@ public class ChessMain {
                         moves.add(new Moves(initialposition.line,
                                 initialposition.column,
                                 initialposition.line - 2,
-                                initialposition.column));
+                                initialposition.column,0));
                     }
                 }
             }
@@ -593,68 +600,127 @@ public class ChessMain {
         if (initialposition.line + 2 < ROWS
                 && initialposition.column + 1 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line + 2][initialposition.column + 1] >= 0
+                    * tabela[initialposition.line + 2][initialposition.column + 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 2][initialposition.column + 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 2][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 2,
-                        initialposition.column + 1));
+                        initialposition.column + 1 , 0));
             }
+            
+             if ((-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column + 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column + 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column + 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 2,
+                        initialposition.column + 1 , 1));
+            }
+            
+            
         }
 
         if (initialposition.line + 2 < ROWS && initialposition.column - 1 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line + 2][initialposition.column - 1] >= 0
+                    * tabela[initialposition.line + 2][initialposition.column - 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 2][initialposition.column - 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 2][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 2,
-                        initialposition.column - 1));
+                        initialposition.column - 1 , 0));
+            }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column - 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column - 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 2][initialposition.column - 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 2,
+                        initialposition.column - 1 , 1));
             }
         }
 
         if (initialposition.line + 1 < ROWS
                 && initialposition.column + 2 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line + 1][initialposition.column + 2] >= 0
+                    * tabela[initialposition.line + 1][initialposition.column + 2] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column + 2] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column + 2] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 1,
-                        initialposition.column + 2));
+                        initialposition.column + 2, 0));
+            }
+            
+            
+            if ((-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 2] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 2] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 2] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 1,
+                        initialposition.column + 2, 1));
             }
         }
 
         if (initialposition.line + 1 < ROWS && initialposition.column - 2 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line + 1][initialposition.column - 2] >= 0
+                    * tabela[initialposition.line + 1][initialposition.column - 2] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column - 2] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column - 2] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 1,
-                        initialposition.column - 2));
+                        initialposition.column - 2, 0));
+            }
+            
+            
+            if ((-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 2] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 2] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 2] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 1,
+                        initialposition.column - 2, 1));
             }
         }
 
         if (initialposition.line - 2 >= 0
                 && initialposition.column + 1 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line - 2][initialposition.column + 1] >= 0
+                    * tabela[initialposition.line - 2][initialposition.column + 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line - 2][initialposition.column + 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line - 2][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 2,
-                        initialposition.column + 1));
+                        initialposition.column + 1 , 0));
+            }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column + 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column + 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column + 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 2,
+                        initialposition.column + 1 , 1));
             }
         }
 
@@ -667,21 +733,44 @@ public class ChessMain {
                     * tabela[initialposition.line - 2][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 2,
-                        initialposition.column - 1));
+                        initialposition.column - 1,0));
+            }
+            
+            
+            if ((-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column - 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column - 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 2][initialposition.column - 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 2,
+                        initialposition.column - 1, 1));
             }
         }
 
         if (initialposition.line - 1 >= 0
                 && initialposition.column + 2 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line - 1][initialposition.column + 2] >= 0
+                    * tabela[initialposition.line - 1][initialposition.column + 2] == 0
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column + 2] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column + 2] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 1,
-                        initialposition.column + 2));
+                        initialposition.column + 2,0));
+            }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 2] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 2] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 2] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 1,
+                        initialposition.column + 2,1));
             }
         }
 
@@ -694,7 +783,19 @@ public class ChessMain {
                     * tabela[initialposition.line - 1][initialposition.column - 2] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 1,
-                        initialposition.column - 2));
+                        initialposition.column - 2,  0));
+            }
+            
+            
+             if ((-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 2] >= 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 2] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 2] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 1,
+                        initialposition.column - 2 , 1));
             }
         }
 
@@ -714,14 +815,14 @@ public class ChessMain {
         while ((line + 1) < ROWS && (column + 1) < COLUMNS) {
             if (tabela[line + 1][column + 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column + 1));
+                        initialposition.column, line + 1, column + 1 , 0));
                 line++;
                 column++;
             } else if ((-colorState) * tabela[line + 1][column + 1] > 0
                     && (-colorState) * tabela[line + 1][column + 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line + 1][column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column + 1));
+                        initialposition.column, line + 1, column + 1, 1));
                 break;
             } else {
                 break;
@@ -734,14 +835,14 @@ public class ChessMain {
         while ((line + 1) < ROWS && (column - 1) >= 0) {
             if (tabela[line + 1][column - 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column - 1));
+                        initialposition.column, line + 1, column - 1 ,0));
                 line++;
                 column--;
             } else if ((-colorState) * tabela[line + 1][column - 1] > 0
                     && (-colorState) * tabela[line + 1][column - 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line + 1][column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column - 1));
+                        initialposition.column, line + 1, column - 1, 1));
                 break;
             } else {
                 break;
@@ -754,14 +855,14 @@ public class ChessMain {
         while ((line - 1) >= 0 && (column + 1) < COLUMNS) {
             if (tabela[line - 1][column + 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column + 1));
+                        initialposition.column, line - 1, column + 1 ,0));
                 line--;
                 column++;
             } else if ((-colorState) * tabela[line - 1][column + 1] > 0
                     && (-colorState) * tabela[line - 1][column + 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line - 1][column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column + 1));
+                        initialposition.column, line - 1, column + 1, 1));
                 break;
             } else {
                 break;
@@ -774,14 +875,14 @@ public class ChessMain {
         while ((line - 1) >= 0 && (column - 1) >= 0) {
             if (tabela[line - 1][column - 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column - 1));
+                        initialposition.column, line - 1, column - 1, 0));
                 line--;
                 column--;
             } else if ((-colorState) * tabela[line - 1][column - 1] > 0
                     && (-colorState) * tabela[line - 1][column - 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line - 1][column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column - 1));
+                        initialposition.column, line - 1, column - 1 , 1));
                 break;
             } else {
                 break;
@@ -804,13 +905,13 @@ public class ChessMain {
         while ((line + 1) < ROWS) {
             if (tabela[line + 1][column] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column));
+                        initialposition.column, line + 1, column ,0 ));
                 line++;
             } else if ((-colorState) * tabela[line + 1][column] > 0
                     && (-colorState) * tabela[line + 1][column] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line + 1][column] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line + 1, column));
+                        initialposition.column, line + 1, column , 1));
                 break;
             } else {
                 break;
@@ -823,13 +924,13 @@ public class ChessMain {
         while ((line - 1) >= 0) {
             if (tabela[line - 1][column] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column));
+                        initialposition.column, line - 1, column,0));
                 line--;
             } else if ((-colorState) * tabela[line - 1][column] > 0
                     && (-colorState) * tabela[line - 1][column] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line - 1][column] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line - 1, column));
+                        initialposition.column, line - 1, column, 1));
                 break;
             } else {
                 break;
@@ -842,13 +943,13 @@ public class ChessMain {
         while ((column + 1) < COLUMNS) {
             if (tabela[line][column + 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line, column + 1));
+                        initialposition.column, line, column + 1 ,0));
                 column++;
             } else if ((-colorState) * tabela[line][column + 1] > 0
                     && (-colorState) * tabela[line][column + 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line][column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line, column + 1));
+                        initialposition.column, line, column + 1, 1));
                 break;
             } else {
                 break;
@@ -861,13 +962,13 @@ public class ChessMain {
         while ((column - 1) >= 0) {
             if (tabela[line][column - 1] == 0) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line, column - 1));
+                        initialposition.column, line, column - 1 ,0));
                 column--;
             } else if ((-colorState) * tabela[line][column - 1] > 0
                     && (-colorState) * tabela[line][column - 1] != Pieces.WHITE_KING
                     && (-colorState) * tabela[line][column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
-                        initialposition.column, line, column - 1));
+                        initialposition.column, line, column - 1, 1));
                 break;
             } else {
                 break;
@@ -902,7 +1003,7 @@ public class ChessMain {
 
         if (initialposition.line + 1 < ROWS) {
             if ((-colorState)
-                    * tabela[initialposition.line + 1][initialposition.column] >= 0
+                    * tabela[initialposition.line + 1][initialposition.column] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column] != Pieces.WHITE_KING
                     && (-colorState)
@@ -910,101 +1011,192 @@ public class ChessMain {
 
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 1,
-                        initialposition.column));
+                        initialposition.column, 0));
+            }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column] != Pieces.BLACK_KING) {
+
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 1,
+                        initialposition.column, 1));
             }
         }
 
         if (initialposition.line - 1 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line - 1][initialposition.column] >= 0
+                    * tabela[initialposition.line - 1][initialposition.column] == 0
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 1,
-                        initialposition.column));
+                        initialposition.column, 0));
+            }
+            
+            
+            if ((-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 1,
+                        initialposition.column ,1));
             }
         }
 
         if (initialposition.column + 1 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line][initialposition.column + 1] >= 0
+                    * tabela[initialposition.line][initialposition.column + 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line][initialposition.column + 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line,
-                        initialposition.column + 1));
+                        initialposition.column + 1, 0));
             }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line][initialposition.column + 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line][initialposition.column + 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line][initialposition.column + 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line,
+                        initialposition.column + 1, 1));
+            } 
         }
 
         if (initialposition.column - 1 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line][initialposition.column - 1] >= 0
+                    * tabela[initialposition.line][initialposition.column - 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line][initialposition.column - 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line,
-                        initialposition.column - 1));
+                        initialposition.column - 1, 0));
+            }
+            
+            if ((-colorState)
+                    * tabela[initialposition.line][initialposition.column - 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line][initialposition.column - 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line][initialposition.column - 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line,
+                        initialposition.column - 1 , 1));
             }
         }
 
         if (initialposition.line + 1 < ROWS
                 && initialposition.column + 1 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line + 1][initialposition.column + 1] >= 0
+                    * tabela[initialposition.line + 1][initialposition.column + 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column + 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 1,
-                        initialposition.column + 1));
+                        initialposition.column + 1 ,0));
+            }
+            
+             if ((-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column + 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 1,
+                        initialposition.column + 1 , 1));
             }
         }
 
         if (initialposition.line - 1 >= 0
                 && initialposition.column + 1 < COLUMNS) {
             if ((-colorState)
-                    * tabela[initialposition.line - 1][initialposition.column + 1] >= 0
+                    * tabela[initialposition.line - 1][initialposition.column + 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column + 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column + 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 1,
-                        initialposition.column + 1));
+                        initialposition.column + 1 ,0));
+            }
+            
+            
+            if ((-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column + 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 1,
+                        initialposition.column + 1 , 1));
             }
         }
 
         if (initialposition.line + 1 < ROWS && initialposition.column - 1 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line + 1][initialposition.column - 1] >= 0
+                    * tabela[initialposition.line + 1][initialposition.column - 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column - 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line + 1][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line + 1,
-                        initialposition.column - 1));
+                        initialposition.column - 1 , 0));
+            }
+            
+             if ((-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line + 1][initialposition.column - 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line + 1,
+                        initialposition.column - 1 , 1));
             }
         }
 
         if (initialposition.line - 1 >= 0 && initialposition.column - 1 >= 0) {
             if ((-colorState)
-                    * tabela[initialposition.line - 1][initialposition.column - 1] >= 0
+                    * tabela[initialposition.line - 1][initialposition.column - 1] == 0
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column - 1] != Pieces.WHITE_KING
                     && (-colorState)
                     * tabela[initialposition.line - 1][initialposition.column - 1] != Pieces.BLACK_KING) {
                 moves.add(new Moves(initialposition.line,
                         initialposition.column, initialposition.line - 1,
-                        initialposition.column - 1));
+                        initialposition.column - 1 ,0));
             }
+            if ((-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 1] > 0
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 1] != Pieces.WHITE_KING
+                    && (-colorState)
+                    * tabela[initialposition.line - 1][initialposition.column - 1] != Pieces.BLACK_KING) {
+                moves.add(new Moves(initialposition.line,
+                        initialposition.column, initialposition.line - 1,
+                        initialposition.column - 1 , 1));
+            }
+            
         }
 
         return moves;
@@ -1014,19 +1206,19 @@ public class ChessMain {
         ArrayList<Moves> moves = new ArrayList<Moves>();
         if (colorState == -1) {
             if (rook4_moves && kingCastlingCondition(tabela)) {
-                moves.add(new Moves(7, 4, 7, 6));
+                moves.add(new Moves(7, 4, 7, 6 ,0));
             }
             if (rook3_moves && queenCastlingCondition(tabela)) {
-                moves.add(new Moves(7, 4, 7, 2));
+                moves.add(new Moves(7, 4, 7, 2 ,0));
             }
         }
 
         if (colorState == 1) {
             if (rook2_moves && kingCastlingCondition(tabela)) {
-                moves.add(new Moves(0, 4, 0, 6));
+                moves.add(new Moves(0, 4, 0, 6 ,0));
             }
             if (rook1_moves && queenCastlingCondition(tabela)) {
-                moves.add(new Moves(0, 4, 0, 2));
+                moves.add(new Moves(0, 4, 0, 2 ,0));
             }
         }
 
@@ -1070,10 +1262,153 @@ public class ChessMain {
         }
         return moves;
     }
-
+    
+    public int doubledPawns(int [][] tabela){
+        int  numberOfDoubledPawns = 0;
+        ArrayList<Position> pawnPosition = new ArrayList<Position>();
+        if(colorState == 1){
+            for(int i = 1 ; i < ROWS ; i++){
+                for(int j = 0 ; j < COLUMNS ; j++){
+                    if(tabela[i][j] == 1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+            for( int i = 0 ; i < pawnPosition.size() - 1 ; i++)
+                for ( int j = i+1 ; j < pawnPosition.size() ; j++)
+                    if (pawnPosition.get(i).column == pawnPosition.get(j).column)
+                        numberOfDoubledPawns++;
+            
+            return numberOfDoubledPawns;
+        }
+        
+        else{
+            for(int i = 0 ; i < ROWS - 1  ; i++){
+                for(int j = 0 ; j < COLUMNS ; j++){
+                    if(tabela[i][j] == -1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+            for( int i = 0 ; i < pawnPosition.size() - 1 ; i++)
+                for ( int j = i+1 ; j < pawnPosition.size() ; j++)
+                    if (pawnPosition.get(i).column == pawnPosition.get(j).column)
+                        numberOfDoubledPawns++;
+            
+            return numberOfDoubledPawns;
+        }
+    }
+    
+    public int blockedPawns(int [][] tabela){
+        int  numberOfblockedPawns = 0;
+        int line;
+        int column;
+        ArrayList<Position> pawnPosition = new ArrayList<Position>();
+        if(colorState == 1){
+            for(int i = 1 ; i < ROWS - 1 ; i++){
+                for(int j = 0 ; j < COLUMNS ; j++){
+                    if(tabela[i][j] == 1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+            for( int i = 0 ; i < pawnPosition.size() - 1 ; i++){
+                line = pawnPosition.get(i).line ;
+                column = pawnPosition.get(i).column;
+                if(tabela[line + 1][column] != 0)
+                    numberOfblockedPawns ++;
+            }
+            return numberOfblockedPawns;
+        }
+        
+        else{
+            for(int i = 1 ; i < ROWS - 1  ; i++){
+                for(int j = 0 ; j < COLUMNS ; j++){
+                    if(tabela[i][j] == -1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+             for( int i = 0 ; i < pawnPosition.size() - 1 ; i++){
+                line = pawnPosition.get(i).line ;
+                column = pawnPosition.get(i).column;
+                if(tabela[line - 1][column] != 0)
+                    numberOfblockedPawns ++;
+            }
+            return numberOfblockedPawns;
+        }
+    }
+    
+    
+    public int isolatedPawns(int [][] tabela){
+        int  numberOfIsolatedPawns = 0;
+        int line;
+        int column;
+        ArrayList<Position> pawnPosition = new ArrayList<Position>();
+        if(colorState == 1){
+            for(int i = 1 ; i < ROWS - 1 ; i++){
+                for(int j = 1 ; j < COLUMNS - 1 ; j++){
+                    if(tabela[i][j] == 1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+            for( int i = 0 ; i < pawnPosition.size() - 1 ; i++){
+                line = pawnPosition.get(i).line ;
+                column = pawnPosition.get(i).column;
+                if(tabela[line - 1][column - 1] != 1 && tabela[line - 1][column + 1] != 1)
+                    numberOfIsolatedPawns ++;
+            }
+            return numberOfIsolatedPawns;
+        }
+        
+        else{
+            for(int i = 1 ; i < ROWS - 1 ; i++){
+                for(int j = 1 ; j < COLUMNS - 1 ; j++){
+                    if(tabela[i][j] == -1)
+                        pawnPosition.add(new Position(i,j));
+                }
+            }
+            
+             for( int i = 0 ; i < pawnPosition.size() - 1 ; i++){
+                line = pawnPosition.get(i).line ;
+                column = pawnPosition.get(i).column;
+                if(tabela[line - 1][column - 1] != 1 && tabela[line - 1][column + 1] != -1)
+                    numberOfIsolatedPawns ++;
+            }
+            return numberOfIsolatedPawns;
+        
+        }
+    }
+    
+    public int bishopCount(int [][]tabela){
+        int bishopCount = 0;
+        for(int i = 0 ; i < ROWS ; i++){
+            for(int j = 0 ; j < COLUMNS; j++){
+                if(tabela [i][j] * colorState == 3)
+                    bishopCount ++;
+            }
+        }
+        
+        return bishopCount;
+    }
+    
+    public int pieceNumber(int [][]tabela){
+        int pieceNumber = 0;
+        for(int i = 0 ; i < ROWS ; i++){
+            for(int j = 0 ; j < COLUMNS; j++){
+                if(tabela [i][j] != 0)
+                    pieceNumber ++;
+            }
+        }
+        
+        return pieceNumber;
+    }
+    
     public int eval(int[][] tabela, int depth) {
         int score = 0;
-
+        int pieceNumber = pieceNumber(tabela);
+        
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 if (tabela[i][j] == 1) {
@@ -1112,14 +1447,44 @@ public class ChessMain {
                 }
 
                 if (tabela[i][j] == 6) {
-                    score += (20000 + KingTableMiddleWhite[i][j]);
+                    if(pieceNumber >= 10)
+                        score += (20000 + KingTableMiddleWhite[i][j]);
+                    else
+                        score +=  (20000 + KingTableEndWhite[i][j]);
                 }
                 if (tabela[i][j] == -6) {
-                    score += (-20000 - KingTableMiddleBlack[i][j]);
+                    if(pieceNumber >= 10)
+                        score += (-20000 + KingTableMiddleBlack[i][j]);
+                    else
+                        score +=  (-20000 + KingTableEndBlack[i][j]);   
                 }
             }
         }
+        
+        // Negative score
+        
+        int Wscore = 0 ;
+        int Bscore = 0 ;
+        
+        if (colorState == -1) {
+            Bscore = (doubledPawns(tabela) + blockedPawns(tabela) + isolatedPawns(tabela)) * 50;
+        } else {
+            Wscore = (doubledPawns(tabela) + blockedPawns(tabela) + isolatedPawns(tabela)) * 50;
+        }
 
+        colorState *= -1;
+
+        if (colorState == -1) {
+            Bscore = (doubledPawns(tabela) + blockedPawns(tabela) + isolatedPawns(tabela)) * 50;
+        } else {
+            Wscore = (doubledPawns(tabela) + blockedPawns(tabela) + isolatedPawns(tabela)) * 50;
+        }
+  
+        colorState *= -1;
+       
+        int nscore = (Wscore - Bscore) * (-colorState);
+       
+        // Mobility score
         int black_size = 0;
         int white_size = 0;
 
@@ -1139,23 +1504,36 @@ public class ChessMain {
 
         colorState *= -1;
 
-        if (black_size == 0) {
+        //Sah mat bonus
+        int mobilityscore = 0;
+        if (black_size == 0 && colorState == -1) {
             score += 10000;
         }
-        if (white_size == 0) {
+        else if (white_size == 0 && colorState == 1) 
             score -= 10000;
+        else if (white_size == 0 && colorState == -1) 
+            score -= 10000;
+        else if (black_size == 0 && colorState == 1) 
+            score += 10000;        
+        
+        else{
+            mobilityscore = (white_size - black_size) * colorState * 5;
         }
-
-        int mobilityscore = (white_size - black_size) * colorState * 5;
-        return score * colorState + mobilityscore;
+        
+        return score * colorState + mobilityscore + nscore;
     }
 
-    public Pair<Moves, Integer> negaMax(int[][] level_table, int depth, int alfa, int beta)
+    public Pair<Moves, Integer> pruning(int[][] level_table, int depth, int alfa, int beta)
             throws IOException {
 
         ArrayList<Moves> playerMoves = new ArrayList<Moves>();
         playerMoves = generateAllMoves(level_table);
         playerMoves = checkMoves(playerMoves, level_table);
+        Collections.sort(playerMoves , new Comparator<Moves>(){
+            public int compare(Moves m1 ,Moves m2){
+                return m2.order - m1.order; 
+            }
+        });
 
         if (depth == 0 || playerMoves.size() == 0) {
             return new Pair<Moves, Integer>(new Moves(), eval(level_table, depth));
@@ -1186,7 +1564,7 @@ public class ChessMain {
                 makeMove(move, 0, table_copy);
             }
             colorState *= -1;
-            score = negaMax(table_copy, depth - 1, -beta, -alfa);
+            score = pruning(table_copy, depth - 1, -beta, -alfa);
             colorState *= -1;
 
             rook1_moves = rooks_moves.get(0);
@@ -1194,31 +1572,22 @@ public class ChessMain {
             rook3_moves = rooks_moves.get(2);
             rook4_moves = rooks_moves.get(3);
 
-            score.second = 0 - score.second;
-               
-            //Negamax
-            //if (score.second > max.second) {
-            //    max.second = score.second;
-            //    max.first = move;
-            //}
-            
-            
-            //Alfa-Beta
-            
-             if (score.second >= beta) {
-             return new Pair<Moves, Integer>(move, beta);
-             }
-
-             if (score.second > max.second) {
-             max.second = score.second;
-             max.first = move;
-
-             if (score.second > alfa) {
-             alfa = score.second;
-             mutare = move;
-                }
-             }
+            score.second = 0 - score.second;     
+             
+            if (score.second >= beta) {
+                return new Pair<Moves, Integer>(move, beta);
             }
+
+            if (score.second > max.second) {
+                max.second = score.second;
+                max.first = move;
+
+                if (score.second > alfa) {
+                    alfa = score.second;
+                    mutare = move;
+                }
+            }
+        }
         return max;
     }
 
@@ -1267,11 +1636,13 @@ public class ChessMain {
             finalcommand = "1/2-1/2 {Draw}";
         }
 
-        Pair<Moves, Integer> move = negaMax(table, 4,Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);;
+        Pair<Moves, Integer> move = pruning (table, MAXDEPTH ,Integer.MIN_VALUE + 1, Integer.MAX_VALUE - 1);;
         String moveEngine = encodeMove(move.first);
         System.out.println(moveEngine);
         System.out.flush();
 
+        movesNumber ++ ;
+        movesHistory += moveEngine + " ";
         
         if (castling[0].equals(moveEngine) || castling[1].equals(moveEngine)) {
             makeMoveCastling(move.first, table);
